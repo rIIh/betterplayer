@@ -511,8 +511,13 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     } else {
         time =  [[[_player currentItem] asset] duration];
     }
+    
     if (!CMTIME_IS_INVALID(_player.currentItem.forwardPlaybackEndTime)) {
         time = [[_player currentItem] forwardPlaybackEndTime];
+    }
+    
+    if (CMTIME_IS_INDEFINITE(time)) {
+        return 0;
     }
 
     return [BetterPlayerTimeUtils FLTCMTimeToMillis:(time)];
