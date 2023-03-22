@@ -552,10 +552,23 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if (speed == 1.0 || speed == 0.0) {
         _playerRate = 1;
         result(nil);
-    } else if (speed < 0 || speed > 2.0) {
+        return;
+    } else if (speed < 0) {
         result([FlutterError errorWithCode:@"unsupported_speed"
                                    message:@"Speed must be >= 0.0 and <= 2.0"
                                    details:nil]);
+        return;
+    }
+    
+    if (@available(iOS 7.0, *)) {
+        if (speed <= 2 || (speed > 2 && _player.currentItem.canPlayFastForward)) {
+            _playerRate = speed;
+            result(nil);
+        } else {
+            result([FlutterError errorWithCode:@"unsupported_speed"
+                                       message:@"Speed must be >= 0.0 and <= 2.0"
+                                       details:nil]);
+        }
     } else if ((speed > 1.0 && _player.currentItem.canPlayFastForward) ||
                (speed < 1.0 && _player.currentItem.canPlaySlowForward)) {
         _playerRate = speed;
