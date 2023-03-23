@@ -379,6 +379,7 @@ class VideoEvent {
     this.size,
     this.buffered,
     this.position,
+    this.isPlaying,
   });
 
   /// The type of the event.
@@ -398,6 +399,9 @@ class VideoEvent {
   ///
   /// Only used if [eventType] is [VideoEventType.initialized].
   final Size? size;
+
+  /// Playing state of player for [VideoEventType.isPlayingChanged].
+  final bool? isPlaying;
 
   /// Buffered parts of the video.
   ///
@@ -446,6 +450,9 @@ enum VideoEventType {
 
   /// The video stopped to buffer.
   bufferingEnd,
+
+  /// The video player playing state changed.
+  isPlayingChanged,
 
   /// The video is set to play
   play,

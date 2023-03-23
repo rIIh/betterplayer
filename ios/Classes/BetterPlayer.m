@@ -26,6 +26,7 @@ AVPictureInPictureController *_pipController;
     _isInitialized = false;
     _isPlaying = false;
     _disposed = false;
+    _exitingPictureInPicture = false;
     _player = [[AVPlayer alloc] init];
     _player.actionAtItemEnd = AVPlayerActionAtItemEndNone;
     ///Fix for loading large videos
@@ -486,7 +487,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 
 - (void)play {
     if (@available(iOS 10.0, *)) {
-        if (_pipController.pictureInPictureActive == true){
+        if (_pipController.pictureInPictureActive == true || _exitingPictureInPicture){
             return;
         }
     }
@@ -494,16 +495,18 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     _stalledCount = 0;
     _isStalledCheckStarted = false;
     _isPlaying = true;
+    NSLog(@"Play");
     [self updatePlayingState];
 }
 
 - (void)pause {
     if (@available(iOS 10.0, *)) {
-        if (_pipController.pictureInPictureActive == true){
+        if (_pipController.pictureInPictureActive == true || _exitingPictureInPicture) {
             return;
         }
     }
     
+    NSLog(@"Pause");
     _isPlaying = false;
     [self updatePlayingState];
 }
@@ -698,30 +701,49 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 #endif
 
 #if TARGET_OS_IOS
-- (void)pictureInPictureControllerDidStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
-    [self disablePictureInPicture];
+- (void)pictureInPictureControllerWillStartPictureInPicture:(AVPictureInPictureController *)pictureInPictureController {
+    NSLog(@"Pre PIP Start: player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying);
+
 }
 
 - (void)pictureInPictureControllerDidStartPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
+    NSLog(@"Post PIP Start: player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying);
+    
     if (_eventSink != nil) {
         _eventSink(@{@"event" : @"pipStart"});
     }
 }
 
-- (void)pictureInPictureControllerWillStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
-
+- (void)pictureInPictureController:(AVPictureInPictureController *)pictureInPictureController restoreUserInterfaceForPictureInPictureStopWithCompletionHandler:(void (^)(BOOL))completionHandler {
+    NSLog(@"PIP Restore interface event: player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying);
+    
+    CMTime time = _player.currentTime;
+    int64_t millis = [BetterPlayerTimeUtils FLTCMTimeToMillis:(time)];
+    
+    _isPlaying = _player.rate > 0;
+    _eventSink(@{
+        @"event" : @"isPlayingChanged",
+        @"value" : @(_isPlaying),
+        @"position": @(millis),
+        @"key" : _key
+    });
+    
+    [self setRestoreUserInterfaceForPIPStopCompletionHandler: true];
 }
 
-- (void)pictureInPictureControllerWillStartPictureInPicture:(AVPictureInPictureController *)pictureInPictureController {
+- (void)pictureInPictureControllerWillStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
+    NSLog(@"Pre PIP Stop: player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying);
+    _exitingPictureInPicture = true;
+}
 
+- (void)pictureInPictureControllerDidStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
+    NSLog(@"Post PIP Stop: player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying);
+    [self disablePictureInPicture];
+    _exitingPictureInPicture = false;
 }
 
 - (void)pictureInPictureController:(AVPictureInPictureController *)pictureInPictureController failedToStartPictureInPictureWithError:(NSError *)error {
 
-}
-
-- (void)pictureInPictureController:(AVPictureInPictureController *)pictureInPictureController restoreUserInterfaceForPictureInPictureStopWithCompletionHandler:(void (^)(BOOL))completionHandler {
-    [self setRestoreUserInterfaceForPIPStopCompletionHandler: true];
 }
 
 - (void) setAudioTrack:(NSString*) name index:(int) index{
