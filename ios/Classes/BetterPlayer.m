@@ -485,6 +485,12 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)play {
+    if (@available(iOS 10.0, *)) {
+        if (_pipController.pictureInPictureActive == true){
+            return;
+        }
+    }
+    
     _stalledCount = 0;
     _isStalledCheckStarted = false;
     _isPlaying = true;
@@ -492,6 +498,12 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)pause {
+    if (@available(iOS 10.0, *)) {
+        if (_pipController.pictureInPictureActive == true){
+            return;
+        }
+    }
+    
     _isPlaying = false;
     [self updatePlayingState];
 }
