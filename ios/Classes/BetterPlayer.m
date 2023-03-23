@@ -689,6 +689,9 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         self._playerLayer = nil;
         if (_eventSink != nil) {
             _eventSink(@{@"event" : @"pipStop"});
+            if (_player.rate == 0 && _isPlaying) {
+                [_player play];
+            }
         }
     }
 }
