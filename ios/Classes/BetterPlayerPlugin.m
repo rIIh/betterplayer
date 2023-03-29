@@ -187,8 +187,6 @@ bool _remoteCommandsInitialized = false;
         return MPRemoteCommandHandlerStatusSuccess;
     }];
 
-
-
     if (@available(iOS 9.1, *)) {
         [commandCenter.changePlaybackPositionCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
             if (_notificationPlayer != [NSNull null]){
@@ -201,12 +199,13 @@ bool _remoteCommandsInitialized = false;
             return MPRemoteCommandHandlerStatusSuccess;
         }];
     }
+    
     _remoteCommandsInitialized = true;
 }
 
-- (void) setupRemoteCommandNotification:(BetterPlayer*)player, NSString* title, NSString* author , NSString* imageUrl{
-    float positionInSeconds = player.position /1000;
-    float durationInSeconds = player.duration/ 1000;
+- (void) setupRemoteCommandNotification:(BetterPlayer*)player, NSString* title, NSString* author , NSString* imageUrl {
+    float positionInSeconds = player.position / 1000;
+    float durationInSeconds = player.duration / 1000;
 
 
     NSMutableDictionary * nowPlayingInfoDict = [@{MPMediaItemPropertyArtist: author,
@@ -255,7 +254,22 @@ bool _remoteCommandsInitialized = false;
     }
 }
 
+- (void) updatePositionInNotification:(BetterPlayer*)player {
+    float positionInSeconds = player.position / 1000;
+    float durationInSeconds = player.duration / 1000;
 
+    NSMutableDictionary* nowPlayingInfoDict = [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo;
+    if (nowPlayingInfoDict == nil) return;
+    
+    NSMutableDictionary* nextNowPlayingInfoDict = [@{MPMediaItemPropertyArtist: nowPlayingInfoDict[MPMediaItemPropertyArtist],
+                                                  MPMediaItemPropertyTitle: nowPlayingInfoDict[MPMediaItemPropertyTitle],
+                                                  MPNowPlayingInfoPropertyElapsedPlaybackTime: [ NSNumber numberWithFloat : positionInSeconds],
+                                                  MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithFloat:durationInSeconds],
+                                                  MPNowPlayingInfoPropertyPlaybackRate: nowPlayingInfoDict[MPNowPlayingInfoPropertyPlaybackRate],
+    } mutableCopy];
+
+    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = nextNowPlayingInfoDict;
+}
 
 - (NSString*) getTextureId: (BetterPlayer*) player{
     NSArray* temp = [_players allKeysForObject: player];
@@ -264,8 +278,10 @@ bool _remoteCommandsInitialized = false;
 }
 
 - (void) setupUpdateListener:(BetterPlayer*)player,NSString* title, NSString* author,NSString* imageUrl  {
+    if (_timeObserverIdDict[[self getTextureId:player]] != nil) return;
+    
     id _timeObserverId = [player.player addPeriodicTimeObserverForInterval:CMTimeMake(1, 1) queue:NULL usingBlock:^(CMTime time){
-        [self setupRemoteCommandNotification:player, title, author, imageUrl];
+        [self updatePositionInNotification:player];
     }];
 
     NSString* key =  [self getTextureId:player];
@@ -365,6 +381,7 @@ bool _remoteCommandsInitialized = false;
                 } else {
                     assetPath = [_registrar lookupKeyForAsset:assetArg];
                 }
+                
                 [player setDataSourceAsset:assetPath withKey:key withCertificateUrl:certificateUrl withLicenseUrl: licenseUrl cacheKey:cacheKey cacheManager:_cacheManager overriddenDuration:overriddenDuration];
             } else if (uriArg) {
                 NSString* encodedUrl = [uriArg stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLFragmentAllowedCharacterSet]];
@@ -373,7 +390,9 @@ bool _remoteCommandsInitialized = false;
                 [player setDataSourceURL:url withKey:key withCertificateUrl:certificateUrl withLicenseUrl: licenseUrl withHeaders:headers withCache: useCache cacheKey:cacheKey cacheManager:_cacheManager overriddenDuration:overriddenDuration videoExtension: videoExtension];
             } else {
                 result(FlutterMethodNotImplemented);
+                return;
             }
+            
             result(nil);
         } else if ([@"dispose" isEqualToString:call.method]) {
             [player clear];
