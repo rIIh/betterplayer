@@ -567,6 +567,10 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if (speed == 1.0 || speed == 0.0) {
         _playerRate = 1;
         result(nil);
+        
+        if (_isPlaying){
+            _player.rate = _playerRate;
+        }
         return;
     } else if (speed < 0) {
         result([FlutterError errorWithCode:@"unsupported_speed"
