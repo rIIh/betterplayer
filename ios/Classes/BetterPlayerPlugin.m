@@ -258,17 +258,13 @@ bool _remoteCommandsInitialized = false;
     float positionInSeconds = player.position / 1000;
     float durationInSeconds = player.duration / 1000;
 
-    NSMutableDictionary* nowPlayingInfoDict = [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo;
+    NSMutableDictionary* nowPlayingInfoDict = [[MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo mutableCopy];
     if (nowPlayingInfoDict == nil) return;
     
-    NSMutableDictionary* nextNowPlayingInfoDict = [@{MPMediaItemPropertyArtist: nowPlayingInfoDict[MPMediaItemPropertyArtist],
-                                                  MPMediaItemPropertyTitle: nowPlayingInfoDict[MPMediaItemPropertyTitle],
-                                                  MPNowPlayingInfoPropertyElapsedPlaybackTime: [ NSNumber numberWithFloat : positionInSeconds],
-                                                  MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithFloat:durationInSeconds],
-                                                  MPNowPlayingInfoPropertyPlaybackRate: nowPlayingInfoDict[MPNowPlayingInfoPropertyPlaybackRate],
-    } mutableCopy];
+    nowPlayingInfoDict[MPNowPlayingInfoPropertyElapsedPlaybackTime] = [NSNumber numberWithFloat: positionInSeconds];
+    nowPlayingInfoDict[MPMediaItemPropertyPlaybackDuration] = [NSNumber numberWithFloat: durationInSeconds];
 
-    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = nextNowPlayingInfoDict;
+    [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = nowPlayingInfoDict;
 }
 
 - (NSString*) getTextureId: (BetterPlayer*) player{
