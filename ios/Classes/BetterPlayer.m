@@ -486,6 +486,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)play {
+    if (_disposed) return;
+    
     if (@available(iOS 10.0, *)) {
         if (_pipController.pictureInPictureActive == true || _exitingPictureInPicture){
             return;
@@ -495,7 +497,6 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     _stalledCount = 0;
     _isStalledCheckStarted = false;
     _isPlaying = true;
-    NSLog(@"Play");
     [self updatePlayingState];
 }
 
