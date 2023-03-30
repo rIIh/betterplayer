@@ -44,6 +44,8 @@ AVPictureInPictureController *_pipController;
 }
 
 - (void)addObservers:(AVPlayerItem*)item {
+    if (_disposed) return;
+       
     if (!self._observersAdded){
         [_player addObserver:self forKeyPath:@"rate" options:0 context:nil];
         [item addObserver:self forKeyPath:@"loadedTimeRanges" options:0 context:timeRangeContext];
@@ -192,11 +194,15 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)setDataSourceAsset:(NSString*)asset withKey:(NSString*)key withCertificateUrl:(NSString*)certificateUrl withLicenseUrl:(NSString*)licenseUrl cacheKey:(NSString*)cacheKey cacheManager:(CacheManager*)cacheManager overriddenDuration:(int) overriddenDuration{
+    if (_disposed) return;
+       
     NSString* path = [[NSBundle mainBundle] pathForResource:asset ofType:nil];
     return [self setDataSourceURL:[NSURL fileURLWithPath:path] withKey:key withCertificateUrl:certificateUrl withLicenseUrl:(NSString*)licenseUrl withHeaders: @{} withCache: false cacheKey:cacheKey cacheManager:cacheManager overriddenDuration:overriddenDuration videoExtension: nil];
 }
 
 - (void)setDataSourceURL:(NSURL*)url withKey:(NSString*)key withCertificateUrl:(NSString*)certificateUrl withLicenseUrl:(NSString*)licenseUrl withHeaders:(NSDictionary*)headers withCache:(BOOL)useCache cacheKey:(NSString*)cacheKey cacheManager:(CacheManager*)cacheManager overriddenDuration:(int) overriddenDuration videoExtension: (NSString*) videoExtension{
+    if (_disposed) return;
+       
     _overriddenDuration = 0;
     if (headers == [NSNull null] || headers == NULL){
         headers = @{};
@@ -233,6 +239,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)setDataSourcePlayerItem:(AVPlayerItem*)item withKey:(NSString*)key{
+    if (_disposed) return;
+       
     _key = key;
     _stalledCount = 0;
     _isStalledCheckStarted = false;
@@ -276,11 +284,14 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if (_isStalledCheckStarted){
         return;
     }
-   _isStalledCheckStarted = true;
+    
+    _isStalledCheckStarted = true;
     [self startStalledCheck];
 }
 
 -(void)startStalledCheck{
+    if (_disposed) return;
+       
     if (_player.currentItem.playbackLikelyToKeepUp ||
         [self availableDuration] - CMTimeGetSeconds(_player.currentItem.currentTime) > 10.0) {
         [self play];
@@ -320,6 +331,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
                         change:(NSDictionary*)change
                        context:(void*)context {
 
+    if (_disposed) return;
+       
     if ([path isEqualToString:@"rate"]) {
         if (@available(iOS 10.0, *)) {
             if (_pipController.pictureInPictureActive == true){
@@ -415,6 +428,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)updatePlayingState {
+    if (_disposed) return;
+       
     if (!_isInitialized || !_key) {
         return;
     }
@@ -436,6 +451,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)onReadyToPlay {
+    if (_disposed) return;
+       
     if (_eventSink && !_isInitialized && _key) {
         if (!_player.currentItem) {
             return;
@@ -501,13 +518,14 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)pause {
+    if (_disposed) return;
+
     if (@available(iOS 10.0, *)) {
         if (_pipController.pictureInPictureActive == true || _exitingPictureInPicture) {
             return;
         }
     }
     
-    NSLog(@"Pause");
     _isPlaying = false;
     [self updatePlayingState];
 }
@@ -540,7 +558,9 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)seekTo:(int)location {
-    ///When player is playing, pause video, seek to new position and start again. This will prevent issues with seekbar jumps.
+    if (_disposed) return;
+    
+   ///When player is playing, pause video, seek to new position and start again. This will prevent issues with seekbar jumps.
     bool wasPlaying = _isPlaying;
     if (wasPlaying){
         [_player pause];
@@ -561,10 +581,14 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)setVolume:(double)volume {
+    if (_disposed) return;
+    
     _player.volume = (float)((volume < 0.0) ? 0.0 : ((volume > 1.0) ? 1.0 : volume));
 }
 
 - (void)setSpeed:(double)speed result:(FlutterResult)result {
+    if (_disposed) return;
+    
     if (speed == 1.0 || speed == 0.0) {
         _playerRate = 1;
         result(nil);
@@ -612,6 +636,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 
 
 - (void)setTrackParameters:(int) width: (int) height: (int)bitrate {
+    if (_disposed) return;
+    
     _player.currentItem.preferredPeakBitRate = bitrate;
     if (@available(iOS 11.0, *)) {
         if (width == 0 && height == 0){
@@ -624,6 +650,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 
 - (void)setPictureInPicture:(BOOL)pictureInPicture
 {
+    if (_disposed) return;
+       
     self._pictureInPicture = pictureInPicture;
     if (@available(iOS 9.0, *)) {
         if (_pipController && self._pictureInPicture && ![_pipController isPictureInPictureActive]) {
@@ -662,6 +690,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void) enablePictureInPicture: (CGRect) frame{
+    if (_disposed) return;
+       
     [self disablePictureInPicture];
     [self usePlayerLayer:frame];
 }
@@ -691,6 +721,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 
 - (void)disablePictureInPicture
 {
+    if (_disposed) return;
+       
     [self setPictureInPicture:true];
     if (__playerLayer){
         [self._playerLayer removeFromSuperlayer];
@@ -752,6 +784,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void) setAudioTrack:(NSString*) name index:(int) index{
+    if (_disposed) return;
+       
     AVMediaSelectionGroup *audioSelectionGroup = [[[_player currentItem] asset] mediaSelectionGroupForMediaCharacteristic: AVMediaCharacteristicAudible];
     NSArray* options = audioSelectionGroup.options;
 
@@ -813,12 +847,15 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)dispose {
+    if (_disposed) return;
+       
     [self pause];
     [self disposeSansEventChannel];
     [_eventChannel setStreamHandler:nil];
     [self disablePictureInPicture];
     [self setPictureInPicture:false];
     _disposed = true;
+    _player = nil;
 }
 
 @end
