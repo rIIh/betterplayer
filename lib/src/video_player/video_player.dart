@@ -555,10 +555,13 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     await _videoPlayerPlatform.seekTo(_textureId, positionToSeek);
     _updatePosition(position);
 
-    if (isPlaying) {
-      play();
-    } else {
-      pause();
+    if (!Platform.isIOS) {
+      // TODO(melvspace): check android. maybe this logic should be removed completely.
+      if (isPlaying) {
+        play();
+      } else {
+        pause();
+      }
     }
   }
 
