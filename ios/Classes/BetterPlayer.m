@@ -28,6 +28,7 @@ AVPictureInPictureController *_pipController;
     _disposed = false;
     _exitingPictureInPicture = false;
     _player = [[AVPlayer alloc] init];
+    _player.appliesMediaSelectionCriteriaAutomatically = NO;
     _player.actionAtItemEnd = AVPlayerActionAtItemEndNone;
     ///Fix for loading large videos
     if (@available(iOS 10.0, *)) {
