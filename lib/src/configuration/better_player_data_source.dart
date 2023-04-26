@@ -156,7 +156,8 @@ class BetterPlayerDataSource {
     bool? useAsmsTracks,
     Map<String, String>? qualities,
     BetterPlayerCacheConfiguration? cacheConfiguration,
-    BetterPlayerNotificationConfiguration? notificationConfiguration,
+    BetterPlayerNotificationConfiguration notificationConfiguration =
+        const BetterPlayerNotificationConfiguration(showNotification: false),
     Duration? overriddenDuration,
     Widget? placeholder,
   }) {
@@ -168,8 +169,7 @@ class BetterPlayerDataSource {
       useAsmsTracks: useAsmsTracks,
       resolutions: qualities,
       cacheConfiguration: cacheConfiguration,
-      notificationConfiguration: notificationConfiguration =
-          const BetterPlayerNotificationConfiguration(showNotification: false),
+      notificationConfiguration: notificationConfiguration,
       overriddenDuration: overriddenDuration,
       placeholder: placeholder,
     );
@@ -185,7 +185,8 @@ class BetterPlayerDataSource {
     bool? useAsmsTracks,
     Map<String, String>? qualities,
     BetterPlayerCacheConfiguration? cacheConfiguration,
-    BetterPlayerNotificationConfiguration? notificationConfiguration,
+    BetterPlayerNotificationConfiguration notificationConfiguration =
+        const BetterPlayerNotificationConfiguration(showNotification: false),
     Duration? overriddenDuration,
     Widget? placeholder,
   }) {
@@ -199,8 +200,7 @@ class BetterPlayerDataSource {
       useAsmsTracks: useAsmsTracks,
       resolutions: qualities,
       cacheConfiguration: cacheConfiguration,
-      notificationConfiguration: notificationConfiguration =
-          const BetterPlayerNotificationConfiguration(showNotification: false),
+      notificationConfiguration: notificationConfiguration,
       overriddenDuration: overriddenDuration,
       placeholder: placeholder,
     );
