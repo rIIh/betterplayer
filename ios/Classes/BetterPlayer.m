@@ -437,8 +437,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if (!self._observersAdded){
         [self addObservers:[_player currentItem]];
     }
-
-    if (_isPlaying) {
+    
+    if (_isPlaying && (_player.rate != _playerRate)) {
         if (@available(iOS 10.0, *)) {
             [_player playImmediatelyAtRate:1.0];
             _player.rate = _playerRate;
@@ -446,7 +446,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
             [_player play];
             _player.rate = _playerRate;
         }
-    } else {
+    } else if (!_isPlaying && _player.rate != 0) {
         [_player pause];
     }
 }
@@ -705,6 +705,11 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)),
                        dispatch_get_main_queue(), ^{
             [self setPictureInPicture:true];
+            
+            // We set the opacity to 0.001 because it is an overlay.
+            // Picture-in-picture will show a placeholder over other widgets when better_player is used in a
+            // ScrollView, PageView or in a widget that changes location.
+            self._playerLayer.opacity = 0.001;
         });
     }
 }
@@ -728,13 +733,16 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 #endif
 
 #if TARGET_OS_IOS
+
 - (void)pictureInPictureControllerWillStartPictureInPicture:(AVPictureInPictureController *)pictureInPictureController {
-    NSLog(@"Pre PIP Start: player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying);
+    NSLog(@"Pre PIP Start: player.rate = %f, _isPlaying = %o",
+          _player.rate, _isPlaying);
 
 }
 
 - (void)pictureInPictureControllerDidStartPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
-    NSLog(@"Post PIP Start: player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying);
+    NSLog(@"Post PIP Start: player.rate = %f, _isPlaying = %o",
+          _player.rate, _isPlaying);
     
     if (_eventSink != nil) {
         _eventSink(@{@"event" : @"pipStart"});
@@ -756,16 +764,18 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     });
     
     [self setRestoreUserInterfaceForPIPStopCompletionHandler: true];
-}
-
-- (void)pictureInPictureControllerWillStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
-    NSLog(@"Pre PIP Stop: player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying);
     _exitingPictureInPicture = true;
 }
 
-- (void)pictureInPictureControllerDidStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
-    NSLog(@"Post PIP Stop: player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying);
+- (void)pictureInPictureControllerWillStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
+    NSLog(@"Pre PIP Stop: player.rate = %f, _isPlaying = %o",
+          _player.rate, _isPlaying);
     [self disablePictureInPicture];
+}
+
+- (void)pictureInPictureControllerDidStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
+    NSLog(@"Post PIP Stop: player.rate = %f, _isPlaying = %o",
+          _player.rate, _isPlaying);
     _exitingPictureInPicture = false;
 }
 
