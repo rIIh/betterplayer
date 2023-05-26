@@ -782,7 +782,6 @@ class BetterPlayerController {
     if (currentVideoPlayerValue.isPip) {
       _wasInPipMode = true;
     } else if (_wasInPipMode) {
-      _postEvent(BetterPlayerEvent(BetterPlayerEventType.pipStop));
       _wasInPipMode = false;
       if (!_wasInFullScreenBeforePiP) {
         exitFullScreen();
@@ -1163,6 +1162,16 @@ class BetterPlayerController {
         break;
       case VideoEventType.bufferingEnd:
         _postEvent(BetterPlayerEvent(BetterPlayerEventType.bufferingEnd));
+        break;
+      case VideoEventType.pipStop:
+        _postEvent(
+          BetterPlayerEvent(
+            BetterPlayerEventType.pipStop,
+            parameters: <String, dynamic>{
+              'restore_interface': event.restoreInterface,
+            },
+          ),
+        );
         break;
       default:
 

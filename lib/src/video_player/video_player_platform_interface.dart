@@ -378,6 +378,7 @@ class VideoEvent {
     this.duration,
     this.size,
     this.buffered,
+    this.restoreInterface,
     this.position,
     this.isPlaying,
   });
@@ -389,6 +390,9 @@ class VideoEvent {
   ///
   /// Used to determine which video the event belongs to.
   final String? key;
+
+  /// Should client restore interface on pip stop.
+  final bool? restoreInterface;
 
   /// Duration of the video.
   ///

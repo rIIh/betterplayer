@@ -27,6 +27,7 @@ AVPictureInPictureController *_pipController;
     _isPlaying = false;
     _disposed = false;
     _exitingPictureInPicture = false;
+    _restoreInterface = false;
     _player = [[AVPlayer alloc] init];
     _player.appliesMediaSelectionCriteriaAutomatically = NO;
     _player.actionAtItemEnd = AVPlayerActionAtItemEndNone;
@@ -507,7 +508,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if (_disposed) return;
     
     if (@available(iOS 10.0, *)) {
-        if (_pipController.pictureInPictureActive == true || _exitingPictureInPicture){
+        if (_exitingPictureInPicture) {
             return;
         }
     }
@@ -522,7 +523,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if (_disposed) return;
 
     if (@available(iOS 10.0, *)) {
-        if (_pipController.pictureInPictureActive == true || _exitingPictureInPicture) {
+        if (_exitingPictureInPicture) {
             return;
         }
     }
@@ -722,11 +723,18 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if (__playerLayer){
         [self._playerLayer removeFromSuperlayer];
         self._playerLayer = nil;
+        
         if (_eventSink != nil) {
-            _eventSink(@{@"event" : @"pipStop"});
+            NSLog(@"PIP: pip stop event emitted");
+            _eventSink(@{@"event" : @"pipStop", @"restore_interface": @(_restoreInterface)});
+        }
+        
+        if (_restoreInterface) {
             if (_player.rate == 0 && _isPlaying) {
                 [_player play];
             }
+        } else {
+            [self pause];
         }
     }
 }
@@ -749,8 +757,11 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     }
 }
 
+bool _restoreInterface = false;
 - (void)pictureInPictureController:(AVPictureInPictureController *)pictureInPictureController restoreUserInterfaceForPictureInPictureStopWithCompletionHandler:(void (^)(BOOL))completionHandler {
     NSLog(@"PIP Restore interface event: player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying);
+    
+    _restoreInterface = true;
     
     CMTime time = _player.currentTime;
     int64_t millis = [BetterPlayerTimeUtils FLTCMTimeToMillis:(time)];
@@ -764,12 +775,12 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     });
     
     [self setRestoreUserInterfaceForPIPStopCompletionHandler: true];
-    _exitingPictureInPicture = true;
 }
 
 - (void)pictureInPictureControllerWillStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
     NSLog(@"Pre PIP Stop: player.rate = %f, _isPlaying = %o",
           _player.rate, _isPlaying);
+    _exitingPictureInPicture = true;
     [self disablePictureInPicture];
 }
 
@@ -777,6 +788,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     NSLog(@"Post PIP Stop: player.rate = %f, _isPlaying = %o",
           _player.rate, _isPlaying);
     _exitingPictureInPicture = false;
+    _restoreInterface = false;
 }
 
 - (void)pictureInPictureController:(AVPictureInPictureController *)pictureInPictureController failedToStartPictureInPictureWithError:(NSError *)error {
