@@ -35,6 +35,9 @@ AVPictureInPictureController *_pipController;
     if (@available(iOS 10.0, *)) {
         _player.automaticallyWaitsToMinimizeStalling = false;
     }
+    
+    [self usePlayerLayer];
+    
     self._observersAdded = false;
     return self;
 }
@@ -674,56 +677,66 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         if (!_pipController && self._playerLayer && [AVPictureInPictureController isPictureInPictureSupported]) {
             _pipController = [[AVPictureInPictureController alloc] initWithPlayerLayer:self._playerLayer];
             _pipController.delegate = self;
+            
+            if (@available(iOS 14.2, *)) {
+                _pipController.canStartPictureInPictureAutomaticallyFromInline = YES;
+            }
         }
     } else {
         // Fallback on earlier versions
     }
 }
 
-- (void) enablePictureInPicture: (CGRect) frame{
+- (void) enablePictureInPicture {
     if (_disposed) return;
-       
-    [self disablePictureInPicture];
-    [self usePlayerLayer:frame];
+    if ([_pipController isPictureInPictureActive]) return;
+    
+    [self setPictureInPicture:true];
 }
 
-- (void)usePlayerLayer: (CGRect) frame
+- (void)setPictureInPictureOverlayRect:(CGRect)frame {
+    if (_player) {
+        self._playerLayer.frame = frame;
+    }
+}
+
+- (void)emitPIPStartEvent {
+    
+}
+
+- (void)usePlayerLayer
 {
     if( _player )
     {
         // Create new controller passing reference to the AVPlayerLayer
         self._playerLayer = [AVPlayerLayer playerLayerWithPlayer:_player];
         UIViewController* vc = [[[UIApplication sharedApplication] keyWindow] rootViewController];
-        self._playerLayer.frame = frame;
         self._playerLayer.needsDisplayOnBoundsChange = YES;
-        //  [self._playerLayer addObserver:self forKeyPath:readyForDisplayKeyPath options:NSKeyValueObservingOptionNew context:nil];
+        
+        // We set the opacity to 0.001 because it is an overlay.
+        // Picture-in-picture will show a placeholder over other widgets when better_player is used in a
+        // ScrollView, PageView or in a widget that changes location.
+        self._playerLayer.opacity = 0.001;
+
+//        [self._playerLayer addObserver:self forKeyPath:readyForDisplayKeyPath options:NSKeyValueObservingOptionNew context:nil];
         [vc.view.layer addSublayer:self._playerLayer];
         vc.view.layer.needsDisplayOnBoundsChange = YES;
         if (@available(iOS 9.0, *)) {
             _pipController = NULL;
         }
+        
         [self setupPipController];
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)),
-                       dispatch_get_main_queue(), ^{
-            [self setPictureInPicture:true];
-            
-            // We set the opacity to 0.001 because it is an overlay.
-            // Picture-in-picture will show a placeholder over other widgets when better_player is used in a
-            // ScrollView, PageView or in a widget that changes location.
-            self._playerLayer.opacity = 0.001;
-        });
     }
 }
 
 - (void)disablePictureInPicture
 {
     if (_disposed) return;
+    if (![_pipController isPictureInPictureActive]) return;
+    
+    [_pipController stopPictureInPicture];
        
-    [self setPictureInPicture:true];
     if (__playerLayer){
-        [self._playerLayer removeFromSuperlayer];
-        self._playerLayer = nil;
-        
         if (_eventSink != nil) {
             NSLog(@"PIP: pip stop event emitted");
             _eventSink(@{@"event" : @"pipStop", @"restore_interface": @(_restoreInterface)});
@@ -745,16 +758,15 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 - (void)pictureInPictureControllerWillStartPictureInPicture:(AVPictureInPictureController *)pictureInPictureController {
     NSLog(@"Pre PIP Start: player.rate = %f, _isPlaying = %o",
           _player.rate, _isPlaying);
-
+    
+    if (_eventSink != nil) {
+        _eventSink(@{@"event" : @"pipStart"});
+    }
 }
 
 - (void)pictureInPictureControllerDidStartPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
     NSLog(@"Post PIP Start: player.rate = %f, _isPlaying = %o",
           _player.rate, _isPlaying);
-    
-    if (_eventSink != nil) {
-        _eventSink(@{@"event" : @"pipStart"});
-    }
 }
 
 bool _restoreInterface = false;
