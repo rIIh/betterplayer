@@ -342,6 +342,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
       }
       final String? eventType = map["event"] as String?;
       final String? key = map["key"] as String?;
+
       switch (eventType) {
         case 'initialized':
           double width = 0;

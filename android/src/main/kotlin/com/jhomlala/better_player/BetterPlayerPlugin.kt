@@ -119,6 +119,7 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                     flutterState?.applicationContext!!, eventChannel, handle,
                     customDefaultLoadControl, result
                 )
+
                 videoPlayers.put(handle.id(), player)
             }
             PRE_CACHE_METHOD -> preCache(call, result)
@@ -190,11 +191,16 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                 result.success(null)
             }
             SET_PICTURE_IN_PICTURE_OVERLAY_RECT -> {
+                // TODO(@melvspace): set pip rect param
                 result.success(null)
             }
             ENABLE_PICTURE_IN_PICTURE_METHOD -> {
-                enablePictureInPicture(player)
-                result.success(null)
+                try {
+                    enablePictureInPicture(player)
+                    result.success(null)
+                } catch (e: Exception) {
+                    result.error("exception", e.message ?: "Failed to enter in PIP mode", e)
+                }
             }
             DISABLE_PICTURE_IN_PICTURE_METHOD -> {
                 disablePictureInPicture(player)
@@ -392,6 +398,7 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             videoPlayers.valueAt(index).disposeRemoteNotifications()
         }
     }
+
     @Suppress("UNCHECKED_CAST")
     private fun <T> getParameter(parameters: Map<String, Any?>?, key: String, defaultValue: T): T {
         if (parameters?.containsKey(key) == true) {

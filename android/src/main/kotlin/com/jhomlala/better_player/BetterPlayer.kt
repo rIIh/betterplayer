@@ -92,6 +92,9 @@ internal class BetterPlayer(
         customDefaultLoadControl ?: CustomDefaultLoadControl()
     private var lastSendBufferedPosition = 0L
 
+    public val isPlaying: Boolean
+        get() = exoPlayer?.isPlaying == true
+
     init {
         val loadBuilder = DefaultLoadControl.Builder()
         loadBuilder.setBufferDurationsMs(
