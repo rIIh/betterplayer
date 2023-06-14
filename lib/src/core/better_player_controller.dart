@@ -1055,10 +1055,15 @@ class BetterPlayerController {
     return videoPlayerController?.setPictureInPictureOverlayRect(rect);
   }
 
-  ///Enable Picture in Picture (PiP) mode. [betterPlayerGlobalKey] is required
-  ///to open PiP mode in iOS. When device is not supported, PiP mode won't be
-  ///open.
-  Future<void>? enablePictureInPicture(GlobalKey betterPlayerGlobalKey) async {
+  /// Enable Picture in Picture (PiP) mode. [betterPlayerGlobalKey] is required
+  /// to open PiP mode in iOS. When device is not supported, PiP mode won't be
+  /// open.
+  ///
+  /// [enterFullscreen] - on Android player will be pushed to fullscreen if true.
+  Future<void>? enablePictureInPicture(
+    GlobalKey betterPlayerGlobalKey, {
+    bool enterFullscreen = true,
+  }) async {
     if (videoPlayerController == null) {
       throw StateError("The data source has not been initialized");
     }
@@ -1078,7 +1083,9 @@ class BetterPlayerController {
           width: 0,
           height: 0,
         );
-        enterFullScreen();
+
+        if (enterFullscreen) enterFullScreen();
+
         _postEvent(BetterPlayerEvent(BetterPlayerEventType.pipStart));
         return;
       }
@@ -1132,6 +1139,8 @@ class BetterPlayerController {
 
   ///Handle VideoEvent when remote controls notification / PiP is shown
   void _handleVideoEvent(VideoEvent event) async {
+    print("VP: Video Event - ${event.eventType}");
+
     switch (event.eventType) {
       case VideoEventType.play:
         _postEvent(BetterPlayerEvent(BetterPlayerEventType.play));
