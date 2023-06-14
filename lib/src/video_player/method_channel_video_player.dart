@@ -427,7 +427,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
         case 'pipStop':
           return VideoEvent(
             eventType: VideoEventType.pipStop,
-            restoreInterface: map['restore_interface'] as bool,
+            restoreInterface: map['restore_interface'] as bool?,
             key: key,
           );
 
