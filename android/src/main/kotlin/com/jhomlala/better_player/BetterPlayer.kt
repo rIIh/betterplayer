@@ -632,30 +632,34 @@ internal class BetterPlayer(
      */
     @SuppressLint("InlinedApi")
     fun setupMediaSession(context: Context?): MediaSessionCompat? {
-        mediaSession?.release()
-        context?.let {
+        try {
+            mediaSession?.release()
+            context?.let {
+                val mediaButtonIntent = Intent(Intent.ACTION_MEDIA_BUTTON)
+                val pendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    0, mediaButtonIntent,
+                    PendingIntent.FLAG_IMMUTABLE
+                )
+                val mediaSession = MediaSessionCompat(context, TAG, null, pendingIntent)
+                mediaSession.setCallback(object : MediaSessionCompat.Callback() {
+                    override fun onSeekTo(pos: Long) {
+                        sendSeekToEvent(pos)
+                        super.onSeekTo(pos)
+                    }
+                })
+                mediaSession.isActive = true
+                val mediaSessionConnector = MediaSessionConnector(mediaSession)
+                mediaSessionConnector.setPlayer(exoPlayer)
+                this.mediaSession = mediaSession
+                return mediaSession
+            }
 
-            val mediaButtonIntent = Intent(Intent.ACTION_MEDIA_BUTTON)
-            val pendingIntent = PendingIntent.getBroadcast(
-                context,
-                0, mediaButtonIntent,
-                PendingIntent.FLAG_IMMUTABLE
-            )
-            val mediaSession = MediaSessionCompat(context, TAG, null, pendingIntent)
-            mediaSession.setCallback(object : MediaSessionCompat.Callback() {
-                override fun onSeekTo(pos: Long) {
-                    sendSeekToEvent(pos)
-                    super.onSeekTo(pos)
-                }
-            })
-            mediaSession.isActive = true
-            val mediaSessionConnector = MediaSessionConnector(mediaSession)
-            mediaSessionConnector.setPlayer(exoPlayer)
-            this.mediaSession = mediaSession
-            return mediaSession
+            return null
+        } catch (exception: Exception) {
+            Log.w(TAG, "Failed to setup media session", exception)
+            return null
         }
-        return null
-
     }
 
     fun onPictureInPictureStatusChanged(inPip: Boolean) {
