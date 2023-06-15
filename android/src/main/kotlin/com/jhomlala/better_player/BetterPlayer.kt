@@ -92,8 +92,9 @@ internal class BetterPlayer(
         customDefaultLoadControl ?: CustomDefaultLoadControl()
     private var lastSendBufferedPosition = 0L
 
-    public val isPlaying: Boolean
-        get() = exoPlayer?.isPlaying == true
+
+    private val _isPlaying = MutableStateFlow(false)
+    val isPlaying = _isPlaying.asStateFlow()
 
     init {
         val loadBuilder = DefaultLoadControl.Builder()
@@ -351,10 +352,18 @@ internal class BetterPlayer(
                         .build()
                 )
             }
+
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                super.onIsPlayingChanged(isPlaying)
+
+                _isPlaying.value = isPlaying
+            }
         }
+
         exoPlayerEventListener?.let { exoPlayerEventListener ->
             exoPlayer?.addListener(exoPlayerEventListener)
         }
+
         exoPlayer?.seekTo(0)
     }
 
