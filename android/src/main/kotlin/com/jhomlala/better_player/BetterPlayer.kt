@@ -200,6 +200,7 @@ internal class BetterPlayer(
         } else {
             exoPlayer?.setMediaSource(mediaSource)
         }
+        exoPlayer?.setAudioAttributes(AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_SPEECH).build(), true)
         exoPlayer?.prepare()
         result.success(null)
     }
@@ -357,6 +358,7 @@ internal class BetterPlayer(
                 super.onIsPlayingChanged(isPlaying)
 
                 _isPlaying.value = isPlaying
+                emitIsPlayingChanged(isPlaying)
             }
         }
 
@@ -660,6 +662,15 @@ internal class BetterPlayer(
             Log.w(TAG, "Failed to setup media session", exception)
             return null
         }
+    }
+
+    fun emitIsPlayingChanged(isPlaying: Boolean) {
+        val event: MutableMap<String, Any> = HashMap()
+        event["event"] = "isPlayingChanged"
+        event["value"] = isPlaying
+        event["position"] = position
+
+        eventSink.success(event)
     }
 
     fun onPictureInPictureStatusChanged(inPip: Boolean) {

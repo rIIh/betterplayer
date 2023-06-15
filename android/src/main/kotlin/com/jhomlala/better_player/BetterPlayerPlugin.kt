@@ -4,24 +4,22 @@
 package com.jhomlala.better_player
 
 import android.app.Activity
-import android.app.PendingIntent
 import android.app.PictureInPictureParams
 import android.app.RemoteAction
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Rect
-import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.util.LongSparseArray
+import androidx.activity.ComponentActivity
 import androidx.annotation.DrawableRes
 import androidx.annotation.RequiresApi
-import androidx.core.app.ComponentActivity
+import androidx.core.app.OnPictureInPictureModeChangedProvider
 import androidx.lifecycle.lifecycleScope
 import com.jhomlala.better_player.BetterPlayerCache.releaseCache
 import io.flutter.embedding.engine.loader.FlutterLoader
@@ -35,6 +33,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.PluginRegistry.UserLeaveHintListener
+import io.flutter.util.Predicate
 import io.flutter.view.TextureRegistry
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
@@ -45,6 +44,7 @@ import kotlinx.coroutines.launch
  */
 class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     private val videoPlayers = LongSparseArray<BetterPlayer>()
+    private val videoPlayerListeners = mutableMapOf<BetterPlayer, Job>()
     private val dataSources = LongSparseArray<Map<String, Any?>>()
     private val userLeaveHintListener: UserLeaveHintListener =
         UserLeaveHintListenerImpl(::onUserLeave)
@@ -56,29 +56,12 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     private var pipHandler: Handler? = null
     private var pipRunnable: Runnable? = null
 
-    /**
-     * A [BroadcastReceiver] for handling action items on the picture-in-picture mode.
-     */
-    private val broadcastReceiver = object : BroadcastReceiver() {
+    internal val isInPictureInPictureMode: Boolean
+        @RequiresApi(Build.VERSION_CODES.N)
+        get() = activity != null && activity!!.isInPictureInPictureMode
 
-        // Called when an item is clicked.
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent == null || intent.action != ACTION_STOPWATCH_CONTROL) {
-                return
-            }
-
-            val textureId: Long = intent.getLongExtra(EXTRA_TEXTURE_ID, -1)
-            if (textureId < 0) return
-
-            val player = videoPlayers[textureId]
-            when (intent.getIntExtra(EXTRA_CONTROL_TYPE, 0)) {
-                CONTROL_TYPE_START_OR_PAUSE -> if (player.isPlaying.value) player.pause() else player.play()
-                CONTROL_TYPE_FORWARD -> player.seekTo((player.position + 15000).toInt())
-                CONTROL_TYPE_BACKWARD -> player.seekTo((player.position - 15000).toInt())
-            }
-        }
-    }
-
+    private val pipActionsReceiver = PIPActionsReceiver(this)
+    private val homeButtonReceiver = HomeButtonReceiver(this)
 
     override fun onAttachedToEngine(binding: FlutterPluginBinding) {
         val loader = FlutterLoader()
@@ -103,13 +86,13 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         flutterState?.startListening(this)
     }
 
-
     override fun onDetachedFromEngine(binding: FlutterPluginBinding) {
         if (flutterState == null) {
             Log.wtf(TAG, "Detached from the engine before registering to it.")
         }
         disposeAllPlayers()
         releaseCache()
+
         flutterState?.stopListening()
         flutterState = null
     }
@@ -119,8 +102,23 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
         activityBinding = binding
         activity = binding.activity
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val provider = activity as? OnPictureInPictureModeChangedProvider
+            provider?.addOnPictureInPictureModeChangedListener { info ->
+                if (!USE_AUTO_PIP_MODE || videoPlayers.size().let { it == 0 || it > 1 })
+                    return@addOnPictureInPictureModeChangedListener
 
-        activity?.registerReceiver(broadcastReceiver, IntentFilter(ACTION_STOPWATCH_CONTROL))
+                getFirstExistingPlayer()
+                    ?.onPictureInPictureStatusChanged(info.isInPictureInPictureMode)
+
+                Log.v(TAG, "PIP Mode changed: ${info.isInPictureInPictureMode}")
+            }
+        }
+
+        activity?.registerReceiver(pipActionsReceiver, PIPActionsReceiver.INTENT_FILTER)
+        activity?.registerReceiver(
+            homeButtonReceiver, IntentFilter(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
+        )
     }
 
     override fun onDetachedFromActivityForConfigChanges() {}
@@ -129,22 +127,30 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     override fun onDetachedFromActivity() {
         activityBinding?.removeOnUserLeaveHintListener(userLeaveHintListener)
-        activity?.unregisterReceiver(broadcastReceiver)
+        activity?.unregisterReceiver(pipActionsReceiver)
+        activity?.unregisterReceiver(homeButtonReceiver)
     }
 
     private fun onUserLeave() {
+        if (USE_AUTO_PIP_MODE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) return
         if (videoPlayers.size().let { it > 1 || it == 0 }) return
 
-        val player = videoPlayers[0]
-        if (player.isPlaying.value) {
-            enablePictureInPicture(player)
-        }
+        getFirstExistingPlayer { it.isPlaying.value }
+            ?.let { enablePictureInPicture(it) }
+    }
+
+
+    internal fun getPlayer(textureId: Long): BetterPlayer? {
+        return videoPlayers[textureId]
     }
 
     private fun disposeAllPlayers() {
         for (i in 0 until videoPlayers.size()) {
+            videoPlayerListeners[videoPlayers.valueAt(i)]?.cancel()
             videoPlayers.valueAt(i).dispose()
         }
+
+        videoPlayerListeners.clear()
         videoPlayers.clear()
         dataSources.clear()
     }
@@ -173,10 +179,18 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                         call.argument(BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS)
                     )
                 }
+
                 val player = BetterPlayer(
                     flutterState?.applicationContext!!, eventChannel, handle,
                     customDefaultLoadControl, result
                 )
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    updatePictureInPictureParams(player)
+
+                    videoPlayerListeners[player]?.cancel()
+                    listenToPlayerStateChanges(player)?.let { videoPlayerListeners[player] = it }
+                }
 
                 videoPlayers.put(handle.id(), player)
             }
@@ -249,20 +263,15 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                 result.success(null)
             }
             SET_PICTURE_IN_PICTURE_OVERLAY_RECT -> {
-                // TODO(@melvspace): set pip rect param
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+                if (activity == null || activity!!.isInPictureInPictureMode) return
+
+                lastPlayerRects[player] = getRectFromCall(call)
                 result.success(null)
             }
             ENABLE_PICTURE_IN_PICTURE_METHOD -> {
                 try {
-                    val left = call.argument<Double>("left")?.toInt()
-                    val top = call.argument<Double>("top")?.toInt()
-                    val width = call.argument<Double>("width")?.toInt()
-                    val height = call.argument<Double>("height")?.toInt()
-                    val rect = ifLet(left, top, width, height) { (left, top, width, height) ->
-                        Rect(left, top, left + width, top + height)
-                    }
-
-                    enablePictureInPicture(player, rect)
+                    enablePictureInPicture(player, getRectFromCall(call))
                     result.success(null)
                 } catch (e: Exception) {
                     result.error("exception", e.message ?: "Failed to enter in PIP mode", e)
@@ -482,8 +491,29 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             .hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
     }
 
-    private var pipPlayerTarget: BetterPlayer? = null
-    private var isPlayingCoroutineJob: Job? = null
+    private fun getRectFromCall(call: MethodCall): Rect? {
+        val left = call.argument<Double>("left")?.toInt()
+        val top = call.argument<Double>("top")?.toInt()
+        val width = call.argument<Double>("width")?.toInt()
+        val height = call.argument<Double>("height")?.toInt()
+        val density = activity!!.resources.displayMetrics.density
+
+        return ifLet(left, top, width, height) { (left, top, width, height) ->
+            Rect(left, top, left + width, top + height) * density
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun listenToPlayerStateChanges(player: BetterPlayer): Job? {
+        val component = activity as? ComponentActivity
+
+        return component?.lifecycleScope?.launch {
+            player.isPlaying.collect {
+                updatePictureInPictureParams(player)
+            }
+        }
+    }
+
     private val lastPlayerRects = mutableMapOf<BetterPlayer, Rect?>()
     private fun enablePictureInPicture(player: BetterPlayer, rect: Rect? = null) {
         rect?.let { lastPlayerRects[player] = rect }
@@ -495,16 +525,6 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             )
             startPictureInPictureListenerTimer(player)
             player.onPictureInPictureStatusChanged(true)
-
-            val component = activity as? ComponentActivity
-
-            pipPlayerTarget = player
-            isPlayingCoroutineJob?.cancel()
-            isPlayingCoroutineJob = component?.lifecycleScope?.launch {
-                player.isPlaying.collect {
-                    updatePictureInPictureParams(player)
-                }
-            }
         }
     }
 
@@ -514,7 +534,20 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             .setActions(buildPIPActions(player))
 
         val rect = lastPlayerRects[player]
-        rect?.let { builder.setSourceRectHint(it) }
+        rect?.let {
+            Log.v(TAG, "PIP Params: set source rect hint: $it")
+
+            builder.setSourceRectHint(it)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                builder.setSeamlessResizeEnabled(false)
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val isAutoEnterEnabled = USE_AUTO_PIP_MODE && player.isPlaying.value
+            Log.v(TAG, "PIP Params: Set auto enter enabled: $isAutoEnterEnabled")
+            builder.setAutoEnterEnabled(isAutoEnterEnabled)
+        }
 
         val params = builder.build()
         activity!!.setPictureInPictureParams(params)
@@ -525,31 +558,35 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     private fun buildPIPActions(player: BetterPlayer): List<RemoteAction> {
         val textureId = getTextureId(player) ?: return listOf()
 
-        return listOf(
+        return listOfNotNull(
             createRemoteAction(
                 R.drawable.backward,
-                REQUEST_BACKWARD,
-                CONTROL_TYPE_BACKWARD,
+                "Seek Backward",
+                PIPActionsReceiver.REQUEST_BACKWARD,
+                PIPActionsReceiver.CONTROL_TYPE_BACKWARD,
                 textureId,
             ),
             if (player.isPlaying.value)
                 createRemoteAction(
                     R.drawable.pause,
-                    REQUEST_START_OR_PAUSE,
-                    CONTROL_TYPE_START_OR_PAUSE,
+                    "Pause",
+                    PIPActionsReceiver.REQUEST_START_OR_PAUSE,
+                    PIPActionsReceiver.CONTROL_TYPE_START_OR_PAUSE,
                     textureId
                 )
             else
                 createRemoteAction(
                     R.drawable.play,
-                    REQUEST_START_OR_PAUSE,
-                    CONTROL_TYPE_START_OR_PAUSE,
+                    "Play",
+                    PIPActionsReceiver.REQUEST_START_OR_PAUSE,
+                    PIPActionsReceiver.CONTROL_TYPE_START_OR_PAUSE,
                     textureId
                 ),
             createRemoteAction(
                 R.drawable.forward,
-                REQUEST_FORWARD,
-                CONTROL_TYPE_FORWARD,
+                "Seek Forward",
+                PIPActionsReceiver.REQUEST_FORWARD,
+                PIPActionsReceiver.CONTROL_TYPE_FORWARD,
                 textureId,
             ),
         )
@@ -560,10 +597,6 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         activity!!.moveTaskToBack(false)
         player.onPictureInPictureStatusChanged(false)
         player.disposeMediaSession()
-
-        isPlayingCoroutineJob?.cancel()
-        isPlayingCoroutineJob = null
-        pipPlayerTarget = null
     }
 
     private fun startPictureInPictureListenerTimer(player: BetterPlayer) {
@@ -576,9 +609,6 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                     player.onPictureInPictureStatusChanged(false)
                     player.disposeMediaSession()
                     stopPipHandler()
-
-                    isPlayingCoroutineJob?.cancel()
-                    isPlayingCoroutineJob = null
                 }
             }
             pipHandler!!.post(pipRunnable!!)
@@ -587,15 +617,23 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     private fun dispose(player: BetterPlayer, textureId: Long) {
         player.dispose()
+
         videoPlayers.remove(textureId)
         dataSources.remove(textureId)
         stopPipHandler()
 
-        if (pipPlayerTarget == player) {
-            isPlayingCoroutineJob?.cancel()
-            isPlayingCoroutineJob = null
-            pipPlayerTarget = null
+        videoPlayerListeners.remove(player)?.cancel()
+    }
+
+    internal fun getFirstExistingPlayer(predicate: Predicate<BetterPlayer>? = null): BetterPlayer? {
+        for (i in 0L..videoPlayers.size()) {
+            val player = videoPlayers.get(i)
+            if (player != null && (predicate == null || predicate.test(player))) {
+                return player
+            }
         }
+
+        return null
     }
 
     private fun stopPipHandler() {
@@ -613,27 +651,21 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createRemoteAction(
         @DrawableRes iconResId: Int,
-//        @StringRes titleResId: Int,
+        title: String,
         requestCode: Int,
         controlType: Int,
         textureId: Long
-    ): RemoteAction {
-        activity!!.let {
-            return RemoteAction(
-                Icon.createWithResource(it, iconResId),
-                "it.getString(titleResId)",
-                "it.getString(titleResId)",
-                PendingIntent.getBroadcast(
-                    it,
-                    requestCode,
-                    Intent(ACTION_STOPWATCH_CONTROL)
-                        .putExtra(EXTRA_CONTROL_TYPE, controlType)
-                        .putExtra(EXTRA_TEXTURE_ID, textureId),
-                    PendingIntent.FLAG_IMMUTABLE
-                )
-            )
-        }
+    ): RemoteAction? {
+        val activity = this.activity ?: return null
 
+        return PIPActionsReceiver.createRemoteAction(
+            activity,
+            iconResId,
+            title,
+            requestCode,
+            controlType,
+            textureId,
+        )
     }
 
     private interface KeyForAssetFn {
@@ -735,18 +767,8 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         private const val PRE_CACHE_METHOD = "preCache"
         private const val STOP_PRE_CACHE_METHOD = "stopPreCache"
 
-        /** Intent action for stopwatch controls from Picture-in-Picture mode.  */
-        private const val ACTION_STOPWATCH_CONTROL = "stopwatch_control"
+        internal const val USE_AUTO_PIP_MODE = true
 
-        /** Intent extra for stopwatch controls from Picture-in-Picture mode.  */
-        private const val EXTRA_CONTROL_TYPE = "control_type"
-        private const val EXTRA_TEXTURE_ID = "texture_id"
-        private const val CONTROL_TYPE_START_OR_PAUSE = 1
-        private const val CONTROL_TYPE_BACKWARD = 2
-        private const val CONTROL_TYPE_FORWARD = 3
 
-        private const val REQUEST_START_OR_PAUSE = 101
-        private const val REQUEST_BACKWARD = 102
-        private const val REQUEST_FORWARD = 103
     }
 }
