@@ -12,6 +12,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.graphics.Rect
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Handler
@@ -128,6 +129,7 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     override fun onDetachedFromActivity() {
         activityBinding?.removeOnUserLeaveHintListener(userLeaveHintListener)
+        activity?.unregisterReceiver(broadcastReceiver)
     }
 
     private fun onUserLeave() {
@@ -252,7 +254,15 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             }
             ENABLE_PICTURE_IN_PICTURE_METHOD -> {
                 try {
-                    enablePictureInPicture(player)
+                    val left = call.argument<Double>("left")?.toInt()
+                    val top = call.argument<Double>("top")?.toInt()
+                    val width = call.argument<Double>("width")?.toInt()
+                    val height = call.argument<Double>("height")?.toInt()
+                    val rect = ifLet(left, top, width, height) { (left, top, width, height) ->
+                        Rect(left, top, left + width, top + height)
+                    }
+
+                    enablePictureInPicture(player, rect)
                     result.success(null)
                 } catch (e: Exception) {
                     result.error("exception", e.message ?: "Failed to enter in PIP mode", e)
@@ -472,9 +482,12 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             .hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
     }
 
-    private var _pipPlayerTarget: BetterPlayer? = null
-    private var _isPlayingCoroutineJob: Job? = null
-    private fun enablePictureInPicture(player: BetterPlayer) {
+    private var pipPlayerTarget: BetterPlayer? = null
+    private var isPlayingCoroutineJob: Job? = null
+    private val lastPlayerRects = mutableMapOf<BetterPlayer, Rect?>()
+    private fun enablePictureInPicture(player: BetterPlayer, rect: Rect? = null) {
+        rect?.let { lastPlayerRects[player] = rect }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             player.setupMediaSession(flutterState!!.applicationContext)
             activity!!.enterPictureInPictureMode(
@@ -485,12 +498,11 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
             val component = activity as? ComponentActivity
 
-            _pipPlayerTarget = player
-            _isPlayingCoroutineJob?.cancel()
-            _isPlayingCoroutineJob = component?.lifecycleScope?.launch {
+            pipPlayerTarget = player
+            isPlayingCoroutineJob?.cancel()
+            isPlayingCoroutineJob = component?.lifecycleScope?.launch {
                 player.isPlaying.collect {
                     updatePictureInPictureParams(player)
-                    Log.v(TAG, "update pip params")
                 }
             }
         }
@@ -498,12 +510,13 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun updatePictureInPictureParams(player: BetterPlayer): PictureInPictureParams {
-        val params = PictureInPictureParams.Builder()
-            // Set action items for the picture-in-picture mode. These are the only custom controls
-            // available during the picture-in-picture mode.
+        val builder = PictureInPictureParams.Builder()
             .setActions(buildPIPActions(player))
-            .build()
 
+        val rect = lastPlayerRects[player]
+        rect?.let { builder.setSourceRectHint(it) }
+
+        val params = builder.build()
         activity!!.setPictureInPictureParams(params)
         return params
     }
@@ -548,9 +561,9 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         player.onPictureInPictureStatusChanged(false)
         player.disposeMediaSession()
 
-        _isPlayingCoroutineJob?.cancel()
-        _isPlayingCoroutineJob = null
-        _pipPlayerTarget = null
+        isPlayingCoroutineJob?.cancel()
+        isPlayingCoroutineJob = null
+        pipPlayerTarget = null
     }
 
     private fun startPictureInPictureListenerTimer(player: BetterPlayer) {
@@ -564,8 +577,8 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                     player.disposeMediaSession()
                     stopPipHandler()
 
-                    _isPlayingCoroutineJob?.cancel()
-                    _isPlayingCoroutineJob = null
+                    isPlayingCoroutineJob?.cancel()
+                    isPlayingCoroutineJob = null
                 }
             }
             pipHandler!!.post(pipRunnable!!)
@@ -578,10 +591,10 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         dataSources.remove(textureId)
         stopPipHandler()
 
-        if (_pipPlayerTarget == player) {
-            _isPlayingCoroutineJob?.cancel()
-            _isPlayingCoroutineJob = null
-            _pipPlayerTarget = null
+        if (pipPlayerTarget == player) {
+            isPlayingCoroutineJob?.cancel()
+            isPlayingCoroutineJob = null
+            pipPlayerTarget = null
         }
     }
 

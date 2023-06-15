@@ -1070,18 +1070,20 @@ class BetterPlayerController {
 
     final bool isPipSupported =
         (await videoPlayerController!.isPictureInPictureSupported()) ?? false;
+    final rect = _getRect(betterPlayerGlobalKey);
 
     if (isPipSupported) {
       _wasInFullScreenBeforePiP = _isFullScreen;
       _wasControlsEnabledBeforePiP = _controlsEnabled;
       setControlsEnabled(false);
+
       if (Platform.isAndroid) {
         _wasInFullScreenBeforePiP = _isFullScreen;
         await videoPlayerController?.enablePictureInPicture(
-          left: 0,
-          top: 0,
-          width: 0,
-          height: 0,
+          left: rect?.left,
+          top: rect?.top,
+          width: rect?.width,
+          height: rect?.height,
         );
 
         if (enterFullscreen) enterFullScreen();
@@ -1135,6 +1137,26 @@ class BetterPlayerController {
         (await videoPlayerController!.isPictureInPictureSupported()) ?? false;
 
     return isPipSupported && !_isFullScreen;
+  }
+
+  Rect? _getRect(GlobalKey key) {
+    final RenderBox? renderBox =
+        key.currentContext!.findRenderObject() as RenderBox?;
+    if (renderBox == null) {
+      BetterPlayerUtils.log(
+        "Can't show PiP. RenderBox is null. Did you provide valid global"
+        " key?",
+      );
+      return null;
+    }
+
+    final Offset position = renderBox.localToGlobal(Offset.zero);
+    return Rect.fromLTWH(
+      position.dx,
+      position.dy,
+      renderBox.size.width,
+      renderBox.size.height,
+    );
   }
 
   ///Handle VideoEvent when remote controls notification / PiP is shown
