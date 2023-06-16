@@ -37,7 +37,7 @@ AVPictureInPictureController *_pipController;
     }
     
     [self usePlayerLayer];
-    
+
     self._observersAdded = false;
     return self;
 }
@@ -695,7 +695,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)setPictureInPictureOverlayRect:(CGRect)frame {
-    if (_player) {
+    if (_player && !_pipController.isPictureInPictureActive) {
         self._playerLayer.frame = frame;
     }
 }
@@ -706,6 +706,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 
 - (void)usePlayerLayer
 {
+    if (self._playerLayer != NULL) return;
+    
     if( _player )
     {
         // Create new controller passing reference to the AVPlayerLayer
@@ -713,12 +715,11 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         UIViewController* vc = [[[UIApplication sharedApplication] keyWindow] rootViewController];
         self._playerLayer.needsDisplayOnBoundsChange = YES;
         
-        // We set the opacity to 0.001 because it is an overlay.
+        // We set the opacity to 0.0001 because it is an overlay.
         // Picture-in-picture will show a placeholder over other widgets when better_player is used in a
         // ScrollView, PageView or in a widget that changes location.
-        self._playerLayer.opacity = 0.001;
+        self._playerLayer.opacity = .0001;
 
-//        [self._playerLayer addObserver:self forKeyPath:readyForDisplayKeyPath options:NSKeyValueObservingOptionNew context:nil];
         [vc.view.layer addSublayer:self._playerLayer];
         vc.view.layer.needsDisplayOnBoundsChange = YES;
         if (@available(iOS 9.0, *)) {
@@ -880,6 +881,10 @@ bool _restoreInterface = false;
     [self setPictureInPicture:false];
     _disposed = true;
     _player = nil;
+    
+    [self._playerLayer removeFromSuperlayer];
+    self._playerLayer = nil;
+    _pipController = nil;
 }
 
 @end
