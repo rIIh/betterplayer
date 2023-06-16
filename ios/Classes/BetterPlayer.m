@@ -35,8 +35,6 @@ AVPictureInPictureController *_pipController;
     if (@available(iOS 10.0, *)) {
         _player.automaticallyWaitsToMinimizeStalling = true;
     }
-    
-    [self usePlayerLayer];
 
     self._observersAdded = false;
     return self;
@@ -390,6 +388,9 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         }
     }
     else if (context == presentationSizeContext){
+        if (_player.rate > 0 && self._playerLayer == nil)
+            [self usePlayerLayer];
+        
         [self onReadyToPlay];
     }
 
