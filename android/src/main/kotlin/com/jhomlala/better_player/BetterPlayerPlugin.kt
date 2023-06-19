@@ -527,7 +527,6 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         rect?.let { lastPlayerRects[player] = rect }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            player.setupMediaSession(flutterState!!.applicationContext)
             activity!!.enterPictureInPictureMode(
                 updatePictureInPictureParams(player)
             )
