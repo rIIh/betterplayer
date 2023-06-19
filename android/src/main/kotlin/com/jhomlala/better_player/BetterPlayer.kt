@@ -323,7 +323,6 @@ internal class BetterPlayer(
             .build()
 
         playerNotificationManager?.apply {
-
             exoPlayer?.let {
                 setPlayer(ForwardingPlayer(exoPlayer))
                 setUseNextAction(false)
@@ -806,7 +805,7 @@ internal class BetterPlayer(
         private const val FORMAT_HLS = "hls"
         private const val FORMAT_OTHER = "other"
         private const val DEFAULT_NOTIFICATION_CHANNEL = "BETTER_PLAYER_NOTIFICATION"
-        private const val NOTIFICATION_ID = 20772077
+        internal const val NOTIFICATION_ID = 20772077
 
         //Clear cache without accessing BetterPlayerCache.
         fun clearCache(context: Context?, result: MethodChannel.Result) {

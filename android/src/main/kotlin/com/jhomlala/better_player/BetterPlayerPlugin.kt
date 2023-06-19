@@ -19,6 +19,7 @@ import android.util.LongSparseArray
 import androidx.activity.ComponentActivity
 import androidx.annotation.DrawableRes
 import androidx.annotation.RequiresApi
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.OnPictureInPictureModeChangedProvider
 import androidx.lifecycle.lifecycleScope
 import com.jhomlala.better_player.BetterPlayerCache.releaseCache
@@ -84,6 +85,7 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             binding.textureRegistry
         )
         flutterState?.startListening(this)
+        removeNotificationListeners()
     }
 
     override fun onDetachedFromEngine(binding: FlutterPluginBinding) {
@@ -447,7 +449,8 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                 }
                 currentNotificationDataSource = dataSource
                 currentNotificationTextureId = textureId
-                removeOtherNotificationListeners()
+                removeNotificationListeners()
+
                 val showNotification = getParameter(dataSource, SHOW_NOTIFICATION_PARAMETER, false)
                 if (showNotification) {
                     val title = getParameter(dataSource, TITLE_PARAMETER, "")
@@ -468,9 +471,14 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         }
     }
 
-    private fun removeOtherNotificationListeners() {
+    private fun removeNotificationListeners() {
         for (index in 0 until videoPlayers.size()) {
             videoPlayers.valueAt(index).disposeRemoteNotifications()
+        }
+
+        flutterState?.applicationContext?.let {
+            NotificationManagerCompat.from(it)
+                .cancel(BetterPlayer.NOTIFICATION_ID)
         }
     }
 
