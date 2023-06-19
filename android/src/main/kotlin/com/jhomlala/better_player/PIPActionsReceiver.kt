@@ -67,7 +67,7 @@ class PIPActionsReceiver(private val plugin: BetterPlayerPlugin) : BroadcastRece
                         Intent(ACTION_STOPWATCH_CONTROL)
                             .putExtra(EXTRA_CONTROL_TYPE, controlType)
                             .putExtra(EXTRA_TEXTURE_ID, textureId),
-                        PendingIntent.FLAG_IMMUTABLE
+                        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                     )
                 )
             }
