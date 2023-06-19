@@ -107,8 +107,11 @@ internal class BetterPlayer(
         loadControl = loadBuilder.build()
         exoPlayer = ExoPlayer.Builder(context)
             .setTrackSelector(trackSelector)
+            .setSeekForwardIncrementMs(15000L)
+            .setSeekBackIncrementMs(15000L)
             .setLoadControl(loadControl)
             .build()
+
         workManager = WorkManager.getInstance(context)
         workerObserverMap = HashMap()
         setupVideoPlayer(eventChannel, textureEntry, result)
@@ -202,6 +205,7 @@ internal class BetterPlayer(
         }
         exoPlayer?.setAudioAttributes(AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_SPEECH).build(), true)
         exoPlayer?.prepare()
+
         result.success(null)
     }
 
@@ -310,7 +314,13 @@ internal class BetterPlayer(
         playerNotificationManager = PlayerNotificationManager.Builder(
             context, NOTIFICATION_ID,
             playerNotificationChannelName!!
-        ).setMediaDescriptionAdapter(mediaDescriptionAdapter).build()
+        )
+            .setMediaDescriptionAdapter(mediaDescriptionAdapter)
+            .setFastForwardActionIconResourceId(R.drawable.forward)
+            .setRewindActionIconResourceId(R.drawable.backward)
+            .setPlayActionIconResourceId(R.drawable.play)
+            .setPauseActionIconResourceId(R.drawable.pause)
+            .build()
 
         playerNotificationManager?.apply {
 
