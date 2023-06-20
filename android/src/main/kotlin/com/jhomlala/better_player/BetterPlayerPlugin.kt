@@ -603,7 +603,6 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         stopPipHandler()
         activity!!.moveTaskToBack(false)
         player.onPictureInPictureStatusChanged(false)
-        player.disposeMediaSession()
     }
 
     private fun startPictureInPictureListenerTimer(player: BetterPlayer) {
@@ -614,7 +613,6 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                     pipHandler!!.postDelayed(pipRunnable!!, 100)
                 } else {
                     player.onPictureInPictureStatusChanged(false)
-                    player.disposeMediaSession()
                     stopPipHandler()
                 }
             }
