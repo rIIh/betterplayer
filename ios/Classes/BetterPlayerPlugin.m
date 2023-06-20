@@ -134,13 +134,10 @@ bool _remoteCommandsInitialized = false;
     
     [commandCenter.skipForwardCommand addTargetWithHandler: ^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
         if (_notificationPlayer != [NSNull null]){
-            NSLog(@"%lld, %lld", player.position / 1000, _notificationPlayer.position / 1000);
-            
             MPSkipIntervalCommandEvent* playbackEvent = (MPSkipIntervalCommandEvent * ) event;
             CMTime time = CMTimeMake(player.position / 1000 + playbackEvent.interval, 1);
             int64_t millis = [BetterPlayerTimeUtils FLTCMTimeToMillis:(time)];
             [_notificationPlayer seekTo: millis];
-            _notificationPlayer.eventSink(@{@"event" : @"seek", @"position": @(millis)});
         }
         
         return MPRemoteCommandHandlerStatusSuccess;
@@ -152,7 +149,6 @@ bool _remoteCommandsInitialized = false;
             CMTime time = CMTimeMake(player.position / 1000 - playbackEvent.interval, 1);
             int64_t millis = [BetterPlayerTimeUtils FLTCMTimeToMillis:(time)];
             [_notificationPlayer seekTo: millis];
-            _notificationPlayer.eventSink(@{@"event" : @"seek", @"position": @(millis)});
         }
         
         return MPRemoteCommandHandlerStatusSuccess;
@@ -194,7 +190,6 @@ bool _remoteCommandsInitialized = false;
                 CMTime time = CMTimeMake(playbackEvent.positionTime, 1);
                 int64_t millis = [BetterPlayerTimeUtils FLTCMTimeToMillis:(time)];
                 [_notificationPlayer seekTo: millis];
-                _notificationPlayer.eventSink(@{@"event" : @"seek", @"position": @(millis)});
             }
             return MPRemoteCommandHandlerStatusSuccess;
         }];
