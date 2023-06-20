@@ -459,24 +459,21 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   }
 
   Future<void> _applyPlayPause() async {
-    if (!_created || _isDisposed) {
-      return;
-    }
+    if (!_created || _isDisposed) return;
+
     _timer?.cancel();
     if (value.isPlaying) {
-      await _videoPlayerPlatform.play(_textureId);
       _timer = Timer.periodic(
         const Duration(milliseconds: 300),
         (Timer timer) async {
-          if (_isDisposed) {
-            return;
-          }
-          final Duration? newPosition = await position;
-          final DateTime? newAbsolutePosition = await absolutePosition;
-          // ignore: invariant_booleans
-          if (_isDisposed) {
-            return;
-          }
+          if (_isDisposed) return;
+
+          final positions = await Future.wait<Object?>([position, absolutePosition]);
+          if (_isDisposed) return;
+
+          final Duration? newPosition = positions[0] as Duration?;
+          final DateTime? newAbsolutePosition = positions[1] as DateTime?;
+
           _updatePosition(newPosition, absolutePosition: newAbsolutePosition);
           if (_seekPosition != null && newPosition != null) {
             final difference = newPosition.inMilliseconds - _seekPosition!.inMilliseconds;
@@ -486,6 +483,8 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
           }
         },
       );
+
+      await _videoPlayerPlatform.play(_textureId);
     } else {
       await _videoPlayerPlatform.pause(_textureId);
     }
@@ -550,15 +549,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
     await _videoPlayerPlatform.seekTo(_textureId, positionToSeek);
     _updatePosition(position);
-
-    if (!Platform.isIOS) {
-      // TODO(melvspace): check android. maybe this logic should be removed completely.
-      if (isPlaying) {
-        play();
-      } else {
-        pause();
-      }
-    }
+    _applyPlayPause();
   }
 
   /// Sets the audio volume of [this].
