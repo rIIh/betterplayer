@@ -571,6 +571,12 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
          toleranceAfter:kCMTimeZero];
 }
 
+- (void)seekToWithTolerance:(int)location {
+    if (_disposed) return;
+
+    [_player seekToTime:CMTimeMake(location, 1000)];
+}
+
 - (void)setIsLooping:(bool)isLooping {
     _isLooping = isLooping;
 }
