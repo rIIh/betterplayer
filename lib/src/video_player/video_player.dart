@@ -219,7 +219,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
             size: event.size,
           );
           _initializingCompleter.complete(null);
-          _applyPlayPause();
+          _restartTimer();
           break;
         case VideoEventType.completed:
           value = value.copyWith(isPlaying: false, position: value.duration);
@@ -242,6 +242,8 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
             isPlaying: event.isPlaying,
             position: event.position,
           );
+
+          _restartTimer();
           break;
         case VideoEventType.play:
           play();
@@ -458,32 +460,41 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     await _videoPlayerPlatform.setLooping(_textureId, value.isLooping);
   }
 
+  void _restartTimer() {
+    _timer?.cancel();
+
+    if (!value.isPlaying) return;
+
+    _timer = Timer.periodic(
+      const Duration(milliseconds: 300),
+      (Timer timer) async {
+        if (_isDisposed) return;
+
+        final positions =
+            await Future.wait<Object?>([position, absolutePosition]);
+        if (_isDisposed) return;
+
+        final Duration? newPosition = positions[0] as Duration?;
+        final DateTime? newAbsolutePosition = positions[1] as DateTime?;
+
+        _updatePosition(newPosition, absolutePosition: newAbsolutePosition);
+        if (_seekPosition != null && newPosition != null) {
+          final difference =
+              newPosition.inMilliseconds - _seekPosition!.inMilliseconds;
+          if (difference > 0) {
+            _seekPosition = null;
+          }
+        }
+      },
+    );
+  }
+
   Future<void> _applyPlayPause() async {
     if (!_created || _isDisposed) return;
 
-    _timer?.cancel();
+    _restartTimer();
+
     if (value.isPlaying) {
-      _timer = Timer.periodic(
-        const Duration(milliseconds: 300),
-        (Timer timer) async {
-          if (_isDisposed) return;
-
-          final positions = await Future.wait<Object?>([position, absolutePosition]);
-          if (_isDisposed) return;
-
-          final Duration? newPosition = positions[0] as Duration?;
-          final DateTime? newAbsolutePosition = positions[1] as DateTime?;
-
-          _updatePosition(newPosition, absolutePosition: newAbsolutePosition);
-          if (_seekPosition != null && newPosition != null) {
-            final difference = newPosition.inMilliseconds - _seekPosition!.inMilliseconds;
-            if (difference > 0) {
-              _seekPosition = null;
-            }
-          }
-        },
-      );
-
       await _videoPlayerPlatform.play(_textureId);
     } else {
       await _videoPlayerPlatform.pause(_textureId);
@@ -549,7 +560,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
     await _videoPlayerPlatform.seekTo(_textureId, positionToSeek);
     _updatePosition(position);
-    _applyPlayPause();
+    _restartTimer();
   }
 
   /// Sets the audio volume of [this].
