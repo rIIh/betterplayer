@@ -709,8 +709,9 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)setPictureInPictureOverlayRect:(CGRect)frame {
-    if (_player && !_pipController.isPictureInPictureActive) {
-        self._playerLayer.frame = frame;
+    AVPlayerLayer* layer = [self usePlayerLayer];
+    if (_player && !_pipController.isPictureInPictureActive && layer != NULL) {
+        layer.frame = frame;
     }
 }
 
@@ -718,9 +719,9 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     
 }
 
-- (void)usePlayerLayer
+- (AVPlayerLayer*)usePlayerLayer
 {
-    if (self._playerLayer != NULL) return;
+    if (self._playerLayer != NULL) return self._playerLayer;
     
     if( _player )
     {
@@ -747,7 +748,11 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         }
         
         [self setupPipController];
+        
+        return self._playerLayer;
     }
+    
+    return nil;
 }
 
 - (void)disablePictureInPicture
@@ -903,8 +908,18 @@ bool _restoreInterface = false;
     _player = nil;
     
     [self._playerLayer removeFromSuperlayer];
+    AVPlayerLayer* layer = self._playerLayer;
     self._playerLayer = nil;
-    _pipController = nil;
+    
+    NSLog(@"[BetterPlayer]: player layer disposed");
+    
+    if (_pipController.playerLayer == layer) {
+        NSLog(@"[BetterPlayer]: pip controller disposed");
+        _pipController = nil;
+    }
+    
+    
+    
 }
 
 @end
