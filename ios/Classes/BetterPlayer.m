@@ -20,6 +20,7 @@ AVPictureInPictureController *_pipController;
 #endif
 
 @implementation BetterPlayer
+
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super init];
     NSAssert(self, @"super init cannot be nil");
@@ -398,8 +399,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         AVPlayerItem* item = (AVPlayerItem*)object;
         switch (item.status) {
             case AVPlayerItemStatusFailed:
-                NSLog(@"Failed to load video:");
-                NSLog(item.error.debugDescription);
+                NSLog(@"[BetterPlayer]: Failed to load video:");
+                NSLog(@"%@", item.error.debugDescription);
 
                 if (_eventSink != nil) {
                     _eventSink([FlutterError
@@ -654,6 +655,9 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if (_disposed) return;
        
     self._pictureInPicture = pictureInPicture;
+    
+    NSLog(@"[BetterPlayer]: player layer - %@, %@", self._playerLayer, _pipController.playerLayer);
+    
     if (@available(iOS 9.0, *)) {
         if (_pipController && self._pictureInPicture && ![_pipController isPictureInPictureActive]) {
             dispatch_async(dispatch_get_main_queue(), ^{
@@ -665,7 +669,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
             });
         } else {
             // Fallback on earlier versions
-        } }
+        }
+    }
 }
 
 #if TARGET_OS_IOS
@@ -684,6 +689,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         if (!_pipController && self._playerLayer && [AVPictureInPictureController isPictureInPictureSupported]) {
             _pipController = [[AVPictureInPictureController alloc] initWithPlayerLayer:self._playerLayer];
             _pipController.delegate = self;
+            
+            NSLog(@"[BetterPlayer]: pip controller created");
             
             if (@available(iOS 14.2, *)) {
                 _pipController.canStartPictureInPictureAutomaticallyFromInline = YES;
@@ -722,6 +729,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         UIViewController* vc = [[[UIApplication sharedApplication] keyWindow] rootViewController];
         self._playerLayer.needsDisplayOnBoundsChange = YES;
         
+        NSLog(@"[BetterPlayer]: player layer created");
+        
         // We set the opacity to 0.0001 because it is an overlay.
         // Picture-in-picture will show a placeholder over other widgets when better_player is used in a
         // ScrollView, PageView or in a widget that changes location.
@@ -730,7 +739,11 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         [vc.view.layer addSublayer:self._playerLayer];
         vc.view.layer.needsDisplayOnBoundsChange = YES;
         if (@available(iOS 9.0, *)) {
-            _pipController = NULL;
+            if (_pipController != nil) {
+                NSLog(@"[BetterPlayer]: PIP controller disposed");
+                
+                _pipController = NULL;
+            }
         }
         
         [self setupPipController];
@@ -746,7 +759,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
        
     if (__playerLayer){
         if (_eventSink != nil) {
-            NSLog(@"PIP: pip stop event emitted");
+            NSLog(@"[BetterPlayer]: PIP – pip stop event emitted { \"restoreInterface\": %o }", _restoreInterface);
+            
             _eventSink(@{@"event" : @"pipStop", @"restore_interface": @(_restoreInterface)});
         }
         
@@ -764,7 +778,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 #if TARGET_OS_IOS
 
 - (void)pictureInPictureControllerWillStartPictureInPicture:(AVPictureInPictureController *)pictureInPictureController {
-    NSLog(@"Pre PIP Start: player.rate = %f, _isPlaying = %o",
+    NSLog(@"[BetterPlayer]: Pre PIP Start – player.rate = %f, _isPlaying = %o",
           _player.rate, _isPlaying);
     
     if (_eventSink != nil) {
@@ -773,13 +787,13 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)pictureInPictureControllerDidStartPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
-    NSLog(@"Post PIP Start: player.rate = %f, _isPlaying = %o",
+    NSLog(@"[BetterPlayer]: Post PIP Start – player.rate = %f, _isPlaying = %o",
           _player.rate, _isPlaying);
 }
 
 bool _restoreInterface = false;
 - (void)pictureInPictureController:(AVPictureInPictureController *)pictureInPictureController restoreUserInterfaceForPictureInPictureStopWithCompletionHandler:(void (^)(BOOL))completionHandler {
-    NSLog(@"PIP Restore interface event: player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying);
+    NSLog(@"[BetterPlayer]: PIP Restore interface event – player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying);
     
     _restoreInterface = true;
     
@@ -798,15 +812,14 @@ bool _restoreInterface = false;
 }
 
 - (void)pictureInPictureControllerWillStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
-    NSLog(@"Pre PIP Stop: player.rate = %f, _isPlaying = %o",
+    NSLog(@"[BetterPlayer]: Pre PIP Stop – player.rate = %f, _isPlaying = %o",
           _player.rate, _isPlaying);
     _exitingPictureInPicture = true;
     [self disablePictureInPicture];
 }
 
 - (void)pictureInPictureControllerDidStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
-    NSLog(@"Post PIP Stop: player.rate = %f, _isPlaying = %o",
-          _player.rate, _isPlaying);
+    NSLog(@"[BetterPlayer]: Post PIP Stop – player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying);
     _exitingPictureInPicture = false;
     _restoreInterface = false;
 }
