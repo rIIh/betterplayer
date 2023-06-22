@@ -361,6 +361,8 @@ internal class BetterPlayer(
                         .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, getDuration())
                         .build()
                 )
+
+                emitIsPlayingChanged()
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -654,9 +656,11 @@ internal class BetterPlayer(
                 )
                 val mediaSession = MediaSessionCompat(context, TAG, null, pendingIntent)
                 mediaSession.setCallback(object : MediaSessionCompat.Callback() {
-                    override fun onSeekTo(pos: Long) {
-                        sendSeekToEvent(pos)
-                        super.onSeekTo(pos)
+                    override fun onSeekTo(newPosition: Long) {
+                        sendSeekToEvent(newPosition)
+                        emitIsPlayingChanged(position = newPosition)
+
+                        super.onSeekTo(newPosition)
                     }
                 })
                 mediaSession.isActive = true
@@ -673,11 +677,11 @@ internal class BetterPlayer(
         }
     }
 
-    fun emitIsPlayingChanged(isPlaying: Boolean) {
+    fun emitIsPlayingChanged(isPlaying: Boolean? = null, position: Long? = null) {
         val event: MutableMap<String, Any> = HashMap()
         event["event"] = "isPlayingChanged"
-        event["value"] = isPlaying
-        event["position"] = position
+        event["value"] = isPlaying ?: this.isPlaying.value
+        event["position"] = position ?: this.position
 
         eventSink.success(event)
     }

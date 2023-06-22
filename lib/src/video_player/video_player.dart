@@ -470,21 +470,24 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
       (Timer timer) async {
         if (_isDisposed) return;
 
-        final positions =
-            await Future.wait<Object?>([position, absolutePosition]);
+        final positions = await Future.wait<Object?>(
+          [position, absolutePosition],
+        );
+
         if (_isDisposed) return;
 
         final Duration? newPosition = positions[0] as Duration?;
         final DateTime? newAbsolutePosition = positions[1] as DateTime?;
 
-        _updatePosition(newPosition, absolutePosition: newAbsolutePosition);
         if (_seekPosition != null && newPosition != null) {
           final difference =
               newPosition.inMilliseconds - _seekPosition!.inMilliseconds;
-          if (difference > 0) {
+          if (difference.abs() > 0) {
             _seekPosition = null;
           }
         }
+
+        _updatePosition(newPosition, absolutePosition: newAbsolutePosition);
       },
     );
   }
