@@ -7,6 +7,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:better_player/src/configuration/better_player_buffering_configuration.dart';
 import 'package:better_player/src/video_player/video_player_platform_interface.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -17,7 +18,7 @@ final VideoPlayerPlatform _videoPlayerPlatform = VideoPlayerPlatform.instance
 
 /// The duration, current position, buffering state, error state and settings
 /// of a [VideoPlayerController].
-class VideoPlayerValue {
+class VideoPlayerValue with EquatableMixin {
   /// Constructs a video with the given values. Only [duration] is required. The
   /// rest will initialize with default values when unset.
   VideoPlayerValue({
@@ -40,7 +41,8 @@ class VideoPlayerValue {
 
   /// Returns an instance with a `null` [Duration] and the given
   /// [errorDescription].
-  VideoPlayerValue.erroneous(String errorDescription) : this(duration: null, errorDescription: errorDescription);
+  VideoPlayerValue.erroneous(String errorDescription)
+      : this(duration: null, errorDescription: errorDescription);
 
   /// The total duration of the video.
   ///
@@ -139,20 +141,20 @@ class VideoPlayerValue {
   }
 
   @override
-  String toString() {
-    // ignore: no_runtimetype_tostring
-    return '$runtimeType('
-        'duration: $duration, '
-        'size: $size, '
-        'position: $position, '
-        'absolutePosition: $absolutePosition, '
-        'buffered: [${buffered.join(', ')}], '
-        'isPlaying: $isPlaying, '
-        'isLooping: $isLooping, '
-        'isBuffering: $isBuffering, '
-        'volume: $volume, '
-        'errorDescription: $errorDescription)';
-  }
+  List<Object?> get props => [
+        absolutePosition,
+        position,
+        duration,
+        size,
+        buffered,
+        isPlaying,
+        isLooping,
+        isBuffering,
+        volume,
+        speed,
+        errorDescription,
+        isPip,
+      ];
 }
 
 /// Controls a platform video player, and provides updates when the state is
@@ -178,7 +180,8 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     }
   }
 
-  final StreamController<VideoEvent> videoEventStreamController = StreamController.broadcast();
+  final StreamController<VideoEvent> videoEventStreamController =
+      StreamController.broadcast();
   final Completer<void> _creatingCompleter = Completer<void>();
   int? _textureId;
 
@@ -226,6 +229,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
           _timer?.cancel();
           break;
         case VideoEventType.bufferingUpdate:
+          print("${value.buffered} -> ${event.buffered}");
           value = value.copyWith(buffered: event.buffered);
           break;
         case VideoEventType.bufferingStart:
@@ -238,6 +242,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
           break;
 
         case VideoEventType.isPlayingChanged:
+          print('BP: isPlayingChanged: ${event.isPlaying} - ${event.position}');
           value = value.copyWith(
             isPlaying: event.isPlaying,
             position: event.position,
@@ -278,7 +283,9 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
       }
     }
 
-    _eventSubscription = _videoPlayerPlatform.videoEventsFor(_textureId).listen(eventListener, onError: errorListener);
+    _eventSubscription = _videoPlayerPlatform
+        .videoEventsFor(_textureId)
+        .listen(eventListener, onError: errorListener);
   }
 
   /// Set data source for playing a video from an asset.
@@ -411,7 +418,8 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
     _initializingCompleter = Completer<void>();
 
-    await VideoPlayerPlatform.instance.setDataSource(_textureId, dataSourceDescription);
+    await VideoPlayerPlatform.instance
+        .setDataSource(_textureId, dataSourceDescription);
     return _initializingCompleter.future;
   }
 
@@ -595,15 +603,18 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   /// [height] specifies height of the selected track
   /// [bitrate] specifies bitrate of the selected track
   Future<void> setTrackParameters(int? width, int? height, int? bitrate) async {
-    await _videoPlayerPlatform.setTrackParameters(_textureId, width, height, bitrate);
+    await _videoPlayerPlatform.setTrackParameters(
+        _textureId, width, height, bitrate);
   }
 
   Future<void> setPictureInPictureOverlayRect(Rect rect) {
     return _videoPlayerPlatform.setPictureInPictureOverlayRect(textureId, rect);
   }
 
-  Future<void> enablePictureInPicture({double? top, double? left, double? width, double? height}) async {
-    await _videoPlayerPlatform.enablePictureInPicture(textureId, top, left, width, height);
+  Future<void> enablePictureInPicture(
+      {double? top, double? left, double? width, double? height}) async {
+    await _videoPlayerPlatform.enablePictureInPicture(
+        textureId, top, left, width, height);
   }
 
   Future<void> disablePictureInPicture() async {
@@ -704,7 +715,9 @@ class _VideoPlayerState extends State<VideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    return _textureId == null ? Container() : _videoPlayerPlatform.buildView(_textureId);
+    return _textureId == null
+        ? Container()
+        : _videoPlayerPlatform.buildView(_textureId);
   }
 }
 
