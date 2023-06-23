@@ -229,7 +229,6 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
           _timer?.cancel();
           break;
         case VideoEventType.bufferingUpdate:
-          print("${value.buffered} -> ${event.buffered}");
           value = value.copyWith(buffered: event.buffered);
           break;
         case VideoEventType.bufferingStart:
@@ -242,7 +241,6 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
           break;
 
         case VideoEventType.isPlayingChanged:
-          print('BP: isPlayingChanged: ${event.isPlaying} - ${event.position}');
           value = value.copyWith(
             isPlaying: event.isPlaying,
             position: event.position,
