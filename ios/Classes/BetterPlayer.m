@@ -340,24 +340,17 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if ([path isEqualToString:@"rate"]) {
         if (@available(iOS 10.0, *)) {
             if (_pipController.pictureInPictureActive == true){
-                if (_lastAvPlayerTimeControlStatus != [NSNull null] && _lastAvPlayerTimeControlStatus == _player.timeControlStatus){
-                    return;
+                if (_player.rate > 0) {
+                    if (_isPlaying == true) return;
+                    
+                    _isPlaying = true;
+                } else if (_player.rate == 0) {
+                    if (_isPlaying == false) return;
+                    
+                    _isPlaying = false;
                 }
-
-                if (_player.timeControlStatus == AVPlayerTimeControlStatusPaused){
-                    _lastAvPlayerTimeControlStatus = _player.timeControlStatus;
-                    if (_eventSink != nil) {
-                      _eventSink(@{@"event" : @"pause"});
-                    }
-                    return;
-
-                }
-                if (_player.timeControlStatus == AVPlayerTimeControlStatusPlaying){
-                    _lastAvPlayerTimeControlStatus = _player.timeControlStatus;
-                    if (_eventSink != nil) {
-                      _eventSink(@{@"event" : @"play"});
-                    }
-                }
+                    
+                [self emitIsPlayingChanged];
             }
         }
 
@@ -689,9 +682,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         if (!_pipController && self._playerLayer && [AVPictureInPictureController isPictureInPictureSupported]) {
             _pipController = [[AVPictureInPictureController alloc] initWithPlayerLayer:self._playerLayer];
             _pipController.delegate = self;
-            
-            NSLog(@"[BetterPlayer]: pip controller created");
-            
+         
             if (@available(iOS 14.2, *)) {
                 _pipController.canStartPictureInPictureAutomaticallyFromInline = YES;
             }
@@ -785,7 +776,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 - (void)pictureInPictureControllerWillStartPictureInPicture:(AVPictureInPictureController *)pictureInPictureController {
     NSLog(@"[BetterPlayer]: Pre PIP Start – player.rate = %f, _isPlaying = %o",
           _player.rate, _isPlaying);
-    
+        
     if (_eventSink != nil) {
         _eventSink(@{@"event" : @"pipStart"});
     }
@@ -801,19 +792,24 @@ bool _restoreInterface = false;
     NSLog(@"[BetterPlayer]: PIP Restore interface event – player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying);
     
     _restoreInterface = true;
+    _isPlaying = _player.rate > 0;
+    
+    [self emitIsPlayingChanged];
+    [self setRestoreUserInterfaceForPIPStopCompletionHandler: true];
+}
+
+- (void)emitIsPlayingChanged {
+    if (_eventSink == NULL) return;
     
     CMTime time = _player.currentTime;
     int64_t millis = [BetterPlayerTimeUtils FLTCMTimeToMillis:(time)];
-    
-    _isPlaying = _player.rate > 0;
+
     _eventSink(@{
         @"event" : @"isPlayingChanged",
         @"value" : @(_isPlaying),
         @"position": @(millis),
         @"key" : _key
     });
-    
-    [self setRestoreUserInterfaceForPIPStopCompletionHandler: true];
 }
 
 - (void)pictureInPictureControllerWillStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
