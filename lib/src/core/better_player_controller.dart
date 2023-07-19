@@ -1127,6 +1127,11 @@ class BetterPlayerController {
     _betterPlayerGlobalKey = betterPlayerGlobalKey;
   }
 
+  /// Set this player as PiP primary
+  Future<void> setPIPPrimary([bool isPrimary = true]) async {
+    return videoPlayerController?.setPIPPrimary(isPrimary);
+  }
+
   ///Check if picture in picture mode is supported in this device.
   Future<bool> isPictureInPictureSupported() async {
     if (videoPlayerController == null) {

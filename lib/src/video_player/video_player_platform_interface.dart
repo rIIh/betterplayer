@@ -71,6 +71,10 @@ abstract class VideoPlayerPlatform {
     throw UnimplementedError('create() has not been implemented.');
   }
 
+  Future<void> setPIPPrimary(int? textureId, {bool isPrimary = true}) {
+    throw UnimplementedError('setPIPPrimary() has not been implemented.');
+  }
+
   /// Pre-caches a video.
   Future<void> preCache(DataSource dataSource, int preCacheSize) {
     throw UnimplementedError('preCache() has not been implemented.');

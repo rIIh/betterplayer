@@ -44,6 +44,10 @@ import kotlinx.coroutines.launch
  * Android platform implementation of the VideoPlayerPlugin.
  */
 class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
+    private var currentPIPPlayer: BetterPlayer? = null
+    internal var pipPrimary: BetterPlayer? = null
+        private set
+
     private val videoPlayers = LongSparseArray<BetterPlayer>()
     private val videoPlayerListeners = mutableMapOf<BetterPlayer, Job>()
     private val dataSources = LongSparseArray<Map<String, Any?>>()
@@ -107,11 +111,17 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val provider = activity as? OnPictureInPictureModeChangedProvider
             provider?.addOnPictureInPictureModeChangedListener { info ->
-                if (!USE_AUTO_PIP_MODE || videoPlayers.size().let { it == 0 || it > 1 })
+                if (USE_AUTO_PIP_MODE && currentPIPPlayer == null && info.isInPictureInPictureMode && pipPrimary != null) {
+                    currentPIPPlayer = pipPrimary
+                } else if (!USE_AUTO_PIP_MODE || currentPIPPlayer == null)
                     return@addOnPictureInPictureModeChangedListener
 
-                getFirstExistingPlayer()
+                currentPIPPlayer
                     ?.onPictureInPictureStatusChanged(info.isInPictureInPictureMode)
+
+                if (!info.isInPictureInPictureMode) {
+                    currentPIPPlayer = null
+                }
 
                 Log.v(TAG, "PIP Mode changed: ${info.isInPictureInPictureMode}")
             }
@@ -188,10 +198,9 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                 )
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    updatePictureInPictureParams(player)
-
-                    videoPlayerListeners[player]?.cancel()
-                    listenToPlayerStateChanges(player)?.let { videoPlayerListeners[player] = it }
+                    listenToPlayerStateChangesForPIPParams(player)?.let {
+                        videoPlayerListeners[player] = it
+                    }
                 }
 
                 videoPlayers.put(handle.id(), player)
@@ -270,6 +279,9 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
                 lastPlayerRects[player] = getRectFromCall(call)
                 result.success(null)
+            }
+            SET_PIP_PRIMARY -> {
+                setupPIPPrimary(player, call.argument(PIP_PRIMARY_PARAMETER)!!)
             }
             ENABLE_PICTURE_IN_PICTURE_METHOD -> {
                 try {
@@ -512,18 +524,38 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun listenToPlayerStateChanges(player: BetterPlayer): Job? {
+    private fun listenToPlayerStateChangesForPIPParams(player: BetterPlayer): Job? {
         val component = activity as? ComponentActivity
 
         return component?.lifecycleScope?.launch {
             player.isPlaying.collect {
-                updatePictureInPictureParams(player)
+                if (currentPIPPlayer == player || pipPrimary == player) {
+                    updatePictureInPictureParams(player)
+                }
             }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    private fun setupPIPPrimary(player: BetterPlayer, isPrimary: Boolean) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return
+        if (isInPictureInPictureMode) return
+
+        pipPrimary = if (pipPrimary == player && isPrimary) return
+        else if (pipPrimary == player && !isPrimary) null
+        else if (isPrimary) player
+        else pipPrimary
+
+        Log.v(TAG, "New PIP Primary player set: ${player.hashCode()}")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            updatePictureInPictureParams(pipPrimary)
         }
     }
 
     private val lastPlayerRects = mutableMapOf<BetterPlayer, Rect?>()
     private fun enablePictureInPicture(player: BetterPlayer, rect: Rect? = null) {
+        if (currentPIPPlayer != null) return;
+
         rect?.let { lastPlayerRects[player] = rect }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -532,11 +564,18 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             )
             startPictureInPictureListenerTimer(player)
             player.onPictureInPictureStatusChanged(true)
+            currentPIPPlayer = player
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun updatePictureInPictureParams(player: BetterPlayer): PictureInPictureParams {
+    private fun updatePictureInPictureParams(player: BetterPlayer?): PictureInPictureParams {
+        if (player == null) {
+            val params = PictureInPictureParams.Builder().build()
+            activity!!.setPictureInPictureParams(params)
+            return params
+        }
+
         val builder = PictureInPictureParams.Builder()
             .setActions(buildPIPActions(player))
 
@@ -551,7 +590,8 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val isAutoEnterEnabled = USE_AUTO_PIP_MODE && player.isPlaying.value
+            val isAutoEnterEnabled =
+                USE_AUTO_PIP_MODE && player.isPlaying.value && pipPrimary == player
             Log.v(TAG, "PIP Params: Set auto enter enabled: $isAutoEnterEnabled")
             builder.setAutoEnterEnabled(isAutoEnterEnabled)
         }
@@ -603,6 +643,7 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         stopPipHandler()
         activity!!.moveTaskToBack(false)
         player.onPictureInPictureStatusChanged(false)
+        currentPIPPlayer = null
     }
 
     private fun startPictureInPictureListenerTimer(player: BetterPlayer) {
@@ -625,9 +666,15 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
         videoPlayers.remove(textureId)
         dataSources.remove(textureId)
-        stopPipHandler()
+
+        if (currentPIPPlayer == player) {
+            stopPipHandler()
+        }
 
         videoPlayerListeners.remove(player)?.cancel()
+
+        if (pipPrimary == player) pipPrimary = null
+        if (currentPIPPlayer == player) currentPIPPlayer = null
     }
 
     internal fun getFirstExistingPlayer(predicate: Predicate<BetterPlayer>? = null): BetterPlayer? {
@@ -725,6 +772,7 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         private const val WIDTH_PARAMETER = "width"
         private const val HEIGHT_PARAMETER = "height"
         private const val BITRATE_PARAMETER = "bitrate"
+        private const val PIP_PRIMARY_PARAMETER = "is_primary"
         private const val SHOW_NOTIFICATION_PARAMETER = "showNotification"
         private const val TITLE_PARAMETER = "title"
         private const val AUTHOR_PARAMETER = "author"
@@ -752,6 +800,7 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         private const val INIT_METHOD = "init"
         private const val CREATE_METHOD = "create"
         private const val SET_DATA_SOURCE_METHOD = "setDataSource"
+        private const val SET_PIP_PRIMARY = "setPIPPrimary"
         private const val SET_LOOPING_METHOD = "setLooping"
         private const val SET_VOLUME_METHOD = "setVolume"
         private const val PLAY_METHOD = "play"

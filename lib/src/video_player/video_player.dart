@@ -436,6 +436,10 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     super.dispose();
   }
 
+  Future<void> setPIPPrimary([bool isPrimary = true]) {
+    return _videoPlayerPlatform.setPIPPrimary(_textureId, isPrimary: isPrimary);
+  }
+
   /// Starts playing the video.
   ///
   /// This method returns a future that completes as soon as the "play" command
