@@ -243,6 +243,13 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                 result.success(null)
             }
             PLAY_METHOD -> {
+                for (i in 0L until videoPlayers.size()) {
+                    val otherPlayer = videoPlayers[i]
+                    if (otherPlayer != player) {
+                        otherPlayer.pause()
+                    }
+                }
+
                 setupNotification(player)
                 player.play()
                 result.success(null)
