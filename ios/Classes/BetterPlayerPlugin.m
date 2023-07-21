@@ -441,6 +441,8 @@ bool _remoteCommandsInitialized = false;
             result(nil);
         } else if ([@"enablePictureInPicture" isEqualToString:call.method]){
             [player enablePictureInPicture];
+        } else if ([@"setPIPPrimary" isEqualToString:call.method]) {
+            [player setPIPPrimary:argsMap[@"isPrimary"]];
         } else if ([@"setPictureInPictureOverlayRect" isEqualToString:call.method]){
             double left = [argsMap[@"left"] doubleValue];
             double top = [argsMap[@"top"] doubleValue];

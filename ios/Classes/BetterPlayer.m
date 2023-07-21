@@ -17,6 +17,7 @@ static void* presentationSizeContext = &presentationSizeContext;
 void (^__strong _Nonnull _restoreUserInterfaceForPIPStopCompletionHandler)(BOOL);
 API_AVAILABLE(ios(9.0))
 AVPictureInPictureController *_pipController;
+BetterPlayer *_pipPrimaryPlayer;
 #endif
 
 @implementation BetterPlayer
@@ -382,7 +383,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         }
     }
     else if (context == presentationSizeContext){
-        if (_player.rate > 0 && self._playerLayer == nil)
+        if (_player.rate > 0 && self._playerLayer == nil && _pipPrimaryPlayer == self)
             [self usePlayerLayer];
         
         [self onReadyToPlay];
@@ -675,6 +676,28 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     }
 }
 
+- (bool)setPIPPrimary:(BOOL)isPrimary {
+    if (isPrimary && _pipPrimaryPlayer != self) {
+        if (_pipPrimaryPlayer != NULL) {
+            [_pipPrimaryPlayer setPIPPrimary:false];
+        }
+        
+        _pipPrimaryPlayer = self;
+        [self usePlayerLayer];
+        
+        return true;
+    } else if (!isPrimary && _pipPrimaryPlayer == self) {
+        NSLog(@"[BetterPlayer]: setPIPPrimary:false - PIP controller disposed");
+        __playerLayer = NULL;
+        _pipController = NULL;
+        _pipPrimaryPlayer = NULL;
+        
+        return true;
+    }
+    
+    return false;
+}
+
 - (void)setupPipController {
     if (@available(iOS 9.0, *)) {
         [[AVAudioSession sharedInstance] setActive: YES error: nil];
@@ -700,9 +723,13 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)setPictureInPictureOverlayRect:(CGRect)frame {
+    self.frame = &(frame);
+    
+    if (_pipPrimaryPlayer != self) return;
+    
     AVPlayerLayer* layer = [self usePlayerLayer];
     if (_player && !_pipController.isPictureInPictureActive && layer != NULL) {
-        layer.frame = frame;
+        layer.frame = *(self.frame);
     }
 }
 
@@ -739,6 +766,10 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         }
         
         [self setupPipController];
+        
+        if (self.frame != NULL) {
+            [self setPictureInPictureOverlayRect:*(self.frame)];
+        }
         
         return self._playerLayer;
     }

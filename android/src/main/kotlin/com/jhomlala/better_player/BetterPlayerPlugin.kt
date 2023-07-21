@@ -779,7 +779,7 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         private const val WIDTH_PARAMETER = "width"
         private const val HEIGHT_PARAMETER = "height"
         private const val BITRATE_PARAMETER = "bitrate"
-        private const val PIP_PRIMARY_PARAMETER = "is_primary"
+        private const val PIP_PRIMARY_PARAMETER = "isPrimary"
         private const val SHOW_NOTIFICATION_PARAMETER = "showNotification"
         private const val TITLE_PARAMETER = "title"
         private const val AUTHOR_PARAMETER = "author"

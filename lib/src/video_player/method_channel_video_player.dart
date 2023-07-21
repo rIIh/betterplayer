@@ -226,7 +226,7 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
   Future<void> setPIPPrimary(int? textureId, {bool isPrimary = true}) {
     return _channel.invokeMethod<void>(
       'setPIPPrimary',
-      <String, dynamic>{'textureId': textureId, 'is_primary': isPrimary},
+      <String, dynamic>{'textureId': textureId, 'isPrimary': isPrimary},
     );
   }
 
