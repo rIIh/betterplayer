@@ -37,7 +37,6 @@ import io.flutter.plugin.common.PluginRegistry.UserLeaveHintListener
 import io.flutter.util.Predicate
 import io.flutter.view.TextureRegistry
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 /**
@@ -243,8 +242,10 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                 result.success(null)
             }
             PLAY_METHOD -> {
-                for (i in 0L until videoPlayers.size()) {
-                    val otherPlayer = videoPlayers[i]
+                for (i in 0 until videoPlayers.size()) {
+                    val key: Long = videoPlayers.keyAt(i)
+                    val otherPlayer = videoPlayers.get(key)
+
                     if (otherPlayer != player) {
                         otherPlayer.pause()
                     }
