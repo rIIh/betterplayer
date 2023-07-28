@@ -929,24 +929,25 @@ bool _restoreInterface = false;
     [self pause];
     [self disposeSansEventChannel];
     [_eventChannel setStreamHandler:nil];
-    [self disablePictureInPicture];
-    [self setPictureInPicture:false];
-    _disposed = true;
-    _player = nil;
     
-    [self._playerLayer removeFromSuperlayer];
-    AVPlayerLayer* layer = self._playerLayer;
-    self._playerLayer = nil;
-    
-    NSLog(@"[BetterPlayer]: player layer disposed");
-    
-    if (_pipController.playerLayer == layer) {
-        NSLog(@"[BetterPlayer]: pip controller disposed");
-        _pipController = nil;
+    if (self._playerLayer != NULL) {
+        [self disablePictureInPicture];
+        [self setPictureInPicture:false];
+        
+        [self._playerLayer removeFromSuperlayer];
+        AVPlayerLayer* layer = self._playerLayer;
+        self._playerLayer = nil;
+        
+        NSLog(@"[BetterPlayer]: player layer disposed");
+        if (_pipController.playerLayer == layer) {
+            NSLog(@"[BetterPlayer]: pip controller disposed");
+            _pipController = nil;
+        }
+        
     }
     
-    
-    
+    _disposed = true;
+    _player = nil;
 }
 
 @end
