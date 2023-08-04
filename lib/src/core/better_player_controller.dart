@@ -262,6 +262,8 @@ class BetterPlayerController {
           .addAll(betterPlayerDataSource.subtitles!);
     }
 
+    ///Process data source
+    await _setupDataSource(betterPlayerDataSource);
     if (_isDataSourceAsms(betterPlayerDataSource)) {
       _setupAsmsDataSource(betterPlayerDataSource).then((dynamic value) {
         _setupSubtitles();
@@ -270,8 +272,6 @@ class BetterPlayerController {
       _setupSubtitles();
     }
 
-    ///Process data source
-    await _setupDataSource(betterPlayerDataSource);
     setTrack(BetterPlayerAsmsTrack.defaultTrack());
   }
 
