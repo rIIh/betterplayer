@@ -202,15 +202,21 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
   return transform;
 }
 
-- (void)setDataSourceAsset:(NSString*)asset withKey:(NSString*)key withCertificateUrl:(NSString*)certificateUrl withLicenseUrl:(NSString*)licenseUrl cacheKey:(NSString*)cacheKey cacheManager:(CacheManager*)cacheManager overriddenDuration:(int) overriddenDuration{
-    if (_disposed) return;
+- (void)setDataSourceAsset:(NSString*)asset withKey:(NSString*)key withCertificateUrl:(NSString*)certificateUrl withLicenseUrl:(NSString*)licenseUrl cacheKey:(NSString*)cacheKey cacheManager:(CacheManager*)cacheManager overriddenDuration:(int) overriddenDuration result:(FlutterResult) result {
+    if (_disposed) {
+        result(nil);
+        return;
+    }
        
     NSString* path = [[NSBundle mainBundle] pathForResource:asset ofType:nil];
-    return [self setDataSourceURL:[NSURL fileURLWithPath:path] withKey:key withCertificateUrl:certificateUrl withLicenseUrl:(NSString*)licenseUrl withHeaders: @{} withCache: false cacheKey:cacheKey cacheManager:cacheManager overriddenDuration:overriddenDuration videoExtension: nil];
+    return [self setDataSourceURL:[NSURL fileURLWithPath:path] withKey:key withCertificateUrl:certificateUrl withLicenseUrl:(NSString*)licenseUrl withHeaders: @{} withCache: false cacheKey:cacheKey cacheManager:cacheManager overriddenDuration:overriddenDuration videoExtension: nil result:result];
 }
 
-- (void)setDataSourceURL:(NSURL*)url withKey:(NSString*)key withCertificateUrl:(NSString*)certificateUrl withLicenseUrl:(NSString*)licenseUrl withHeaders:(NSDictionary*)headers withCache:(BOOL)useCache cacheKey:(NSString*)cacheKey cacheManager:(CacheManager*)cacheManager overriddenDuration:(int) overriddenDuration videoExtension: (NSString*) videoExtension{
-    if (_disposed) return;
+- (void)setDataSourceURL:(NSURL*)url withKey:(NSString*)key withCertificateUrl:(NSString*)certificateUrl withLicenseUrl:(NSString*)licenseUrl withHeaders:(NSDictionary*)headers withCache:(BOOL)useCache cacheKey:(NSString*)cacheKey cacheManager:(CacheManager*)cacheManager overriddenDuration:(int) overriddenDuration videoExtension: (NSString*) videoExtension result:(FlutterResult) result {
+    if (_disposed) {
+        result(nil);
+        return;
+    }
        
     _overriddenDuration = 0;
     if (headers == [NSNull null] || headers == NULL){
@@ -244,11 +250,15 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if (@available(iOS 10.0, *) && overriddenDuration > 0) {
         _overriddenDuration = overriddenDuration;
     }
-    return [self setDataSourcePlayerItem:item withKey:key];
+    
+    return [self setDataSourcePlayerItem:item withKey:key result:result];
 }
 
-- (void)setDataSourcePlayerItem:(AVPlayerItem*)item withKey:(NSString*)key{
-    if (_disposed) return;
+- (void)setDataSourcePlayerItem:(AVPlayerItem*)item withKey:(NSString*)key result:(FlutterResult) result{
+    if (_disposed) {
+        result(nil);
+        return;
+    }
        
     _key = key;
     _stalledCount = 0;
@@ -278,10 +288,16 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
                                                 withVideoTrack:videoTrack];
                         item.videoComposition = videoComposition;
                     }
+                    
+                    result(nil);
                 };
                 [videoTrack loadValuesAsynchronouslyForKeys:@[ @"preferredTransform" ]
                                           completionHandler:trackCompletionHandler];
+            } else {
+                result(nil);
             }
+        } else {
+            result(nil);
         }
     };
 
@@ -562,7 +578,10 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)seekTo:(int)location result:(FlutterResult) result {
-    if (_disposed) return;
+    if (_disposed) {
+        result(nil);
+        return;
+    }
 
     [_player seekToTime:CMTimeMake(location, 1000)
         toleranceBefore:kCMTimeZero
@@ -594,7 +613,10 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)setSpeed:(double)speed result:(FlutterResult)result {
-    if (_disposed) return;
+    if (_disposed) {
+        result(nil);
+        return;
+    }
     
     if (speed == 1.0 || speed == 0.0) {
         _playerRate = 1;

@@ -377,12 +377,31 @@ bool _remoteCommandsInitialized = false;
                     assetPath = [_registrar lookupKeyForAsset:assetArg];
                 }
                 
-                [player setDataSourceAsset:assetPath withKey:key withCertificateUrl:certificateUrl withLicenseUrl: licenseUrl cacheKey:cacheKey cacheManager:_cacheManager overriddenDuration:overriddenDuration];
+                [player setDataSourceAsset:assetPath
+                                   withKey:key
+                        withCertificateUrl:certificateUrl
+                            withLicenseUrl:licenseUrl
+                                  cacheKey:cacheKey
+                              cacheManager:_cacheManager
+                        overriddenDuration:overriddenDuration
+                                    result:result
+                ];
             } else if (uriArg) {
                 NSString* encodedUrl = [uriArg stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLFragmentAllowedCharacterSet]];
                 NSURL* url = [NSURL URLWithString:encodedUrl];
 
-                [player setDataSourceURL:url withKey:key withCertificateUrl:certificateUrl withLicenseUrl: licenseUrl withHeaders:headers withCache: useCache cacheKey:cacheKey cacheManager:_cacheManager overriddenDuration:overriddenDuration videoExtension: videoExtension];
+                [player setDataSourceURL:url
+                                 withKey:key
+                      withCertificateUrl:certificateUrl
+                          withLicenseUrl:licenseUrl
+                             withHeaders:headers
+                               withCache:useCache
+                                cacheKey:cacheKey
+                            cacheManager:_cacheManager
+                      overriddenDuration:overriddenDuration
+                          videoExtension:videoExtension
+                                  result:result
+                ];
             } else {
                 result(FlutterMethodNotImplemented);
                 return;
