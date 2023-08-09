@@ -82,7 +82,8 @@ internal class BetterPlayer(
     private var playerNotificationManager: PlayerNotificationManager? = null
     private var refreshHandler: Handler? = null
     private var refreshRunnable: Runnable? = null
-    private var exoPlayerEventListener: Player.Listener? = null
+    private var exoPlayerEventNotificationListener: Player.Listener? = null
+    private var exoPlayerListener: Player.Listener? = null
     private var bitmap: Bitmap? = null
     private var mediaSession: MediaSessionCompat? = null
     private var drmSessionManager: DrmSessionManager? = null
@@ -115,6 +116,23 @@ internal class BetterPlayer(
         workManager = WorkManager.getInstance(context)
         workerObserverMap = HashMap()
         setupVideoPlayer(eventChannel, textureEntry, result)
+
+        exoPlayerListener = object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                emitIsPlayingChanged()
+            }
+
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                super.onIsPlayingChanged(isPlaying)
+
+                _isPlaying.value = isPlaying
+                emitIsPlayingChanged(isPlaying)
+            }
+        }
+
+        exoPlayerListener?.let { exoPlayerEventListener ->
+            exoPlayer.addListener(exoPlayerEventListener)
+        }
     }
 
     fun setDataSource(
@@ -354,34 +372,23 @@ internal class BetterPlayer(
             }
             refreshHandler?.postDelayed(refreshRunnable!!, 0)
         }
-        exoPlayerEventListener = object : Player.Listener {
+        exoPlayerEventNotificationListener = object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 mediaSession?.setMetadata(
                     MediaMetadataCompat.Builder()
                         .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, getDuration())
                         .build()
                 )
-
-                emitIsPlayingChanged()
-            }
-
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                super.onIsPlayingChanged(isPlaying)
-
-                _isPlaying.value = isPlaying
-                emitIsPlayingChanged(isPlaying)
             }
         }
 
-        exoPlayerEventListener?.let { exoPlayerEventListener ->
+        exoPlayerEventNotificationListener?.let { exoPlayerEventListener ->
             exoPlayer?.addListener(exoPlayerEventListener)
         }
-
-        exoPlayer?.seekTo(0)
     }
 
     fun disposeRemoteNotifications() {
-        exoPlayerEventListener?.let { exoPlayerEventListener ->
+        exoPlayerEventNotificationListener?.let { exoPlayerEventListener ->
             exoPlayer?.removeListener(exoPlayerEventListener)
         }
         if (refreshHandler != null) {
@@ -779,6 +786,11 @@ internal class BetterPlayer(
     fun dispose() {
         disposeMediaSession()
         disposeRemoteNotifications()
+
+        exoPlayerListener?.let { exoPlayerListener ->
+            exoPlayer?.removeListener(exoPlayerListener)
+        }
+
         if (isInitialized) {
             exoPlayer?.stop()
         }
