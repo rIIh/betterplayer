@@ -563,13 +563,19 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 
     [_player seekToTime:CMTimeMake(location, 1000)
         toleranceBefore:kCMTimeZero
-         toleranceAfter:kCMTimeZero];
+         toleranceAfter:kCMTimeZero
+      completionHandler:^(BOOL result) {
+        self->_player.currentItem.videoComposition = [self->_player.currentItem.videoComposition mutableCopy];
+    }];
 }
 
 - (void)seekToWithTolerance:(int)location {
     if (_disposed) return;
 
-    [_player seekToTime:CMTimeMake(location, 1000)];
+    [_player seekToTime:CMTimeMake(location, 1000)
+      completionHandler:^(BOOL result) {
+        self->_player.currentItem.videoComposition = [self->_player.currentItem.videoComposition mutableCopy];
+    }];
 }
 
 - (void)setIsLooping:(bool)isLooping {
