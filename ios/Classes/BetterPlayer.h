@@ -46,7 +46,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (instancetype)initWithFrame:(CGRect)frame;
 - (void)setMixWithOthers:(bool)mixWithOthers;
-- (void)seekTo:(int)location;
+- (void)seekTo:(int)location result:(FlutterResult) result;
 - (void)seekToWithTolerance:(int)location;
 - (bool)setPIPPrimary:(bool)isPrimary;
 - (void)setDataSourceAsset:(NSString*)asset withKey:(NSString*)key withCertificateUrl:(NSString*)certificateUrl withLicenseUrl:(NSString*)licenseUrl cacheKey:(NSString*)cacheKey cacheManager:(CacheManager*)cacheManager overriddenDuration:(int) overriddenDuration;

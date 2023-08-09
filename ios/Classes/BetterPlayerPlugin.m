@@ -193,7 +193,7 @@ bool _remoteCommandsInitialized = false;
                 MPChangePlaybackPositionCommandEvent * playbackEvent = (MPChangePlaybackRateCommandEvent * ) event;
                 CMTime time = CMTimeMake(playbackEvent.positionTime, 1);
                 int64_t millis = [BetterPlayerTimeUtils FLTCMTimeToMillis:(time)];
-                [_notificationPlayer seekTo: millis];
+                [_notificationPlayer seekTo:millis result:nil];
             }
             return MPRemoteCommandHandlerStatusSuccess;
         }];
@@ -429,8 +429,7 @@ bool _remoteCommandsInitialized = false;
         } else if ([@"absolutePosition" isEqualToString:call.method]) {
             result(@([player absolutePosition]));
         } else if ([@"seekTo" isEqualToString:call.method]) {
-            [player seekTo:[argsMap[@"location"] intValue]];
-            result(nil);
+            [player seekTo:[argsMap[@"location"] intValue] result:result];
         } else if ([@"pause" isEqualToString:call.method]) {
             [player pause];
             result(nil);

@@ -561,14 +561,16 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     return [BetterPlayerTimeUtils FLTCMTimeToMillis:(time)];
 }
 
-- (void)seekTo:(int)location {
+- (void)seekTo:(int)location result:(FlutterResult) result {
     if (_disposed) return;
 
     [_player seekToTime:CMTimeMake(location, 1000)
         toleranceBefore:kCMTimeZero
-         toleranceAfter:kCMTimeZero
-      completionHandler:^(BOOL result) {
-        self->_player.currentItem.videoComposition = [self->_player.currentItem.videoComposition mutableCopy];
+        toleranceAfter:kCMTimeZero
+        completionHandler:^(BOOL seekResult) {
+        if (result != NULL) {
+            result(nil);
+        }
     }];
 }
 
