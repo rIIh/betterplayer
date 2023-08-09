@@ -59,6 +59,8 @@ bool _remoteCommandsInitialized = false;
                                         arguments:(id _Nullable)args {
     NSNumber* textureId = [args objectForKey:@"textureId"];
     BetterPlayerView* player = [_players objectForKey:@(textureId.intValue)];
+    [BetterPlayerLogger log:[NSString stringWithFormat:@"get layer view with frame: %@", NSStringFromCGRect(frame)]];
+    
     return player;
 }
 
@@ -83,6 +85,8 @@ bool _remoteCommandsInitialized = false;
     player.eventChannel = eventChannel;
     _players[@(textureId)] = player;
     result(@{@"textureId" : @(textureId)});
+    
+    [BetterPlayerLogger log:[NSString stringWithFormat:@"player created with texture - %llo", textureId]];
 }
 
 - (void) setupRemoteNotification :(BetterPlayer*) player{
@@ -489,7 +493,7 @@ bool _remoteCommandsInitialized = false;
                     [_cacheManager preCacheURL:url cacheKey:cacheKey videoExtension:videoExtension withHeaders:headers completionHandler:^(BOOL success){
                     }];
                 } else {
-                    NSLog(@"Pre cache is not supported for given data source.");
+                    [BetterPlayerLogger log:@"Pre cache is not supported for given data source."];
                 }
             }
             result(nil);
@@ -507,7 +511,7 @@ bool _remoteCommandsInitialized = false;
                               completionHandler:^(BOOL success){
                     }];
                 } else {
-                    NSLog(@"Stop pre cache is not supported for given data source.");
+                    [BetterPlayerLogger log:@"Stop pre cache is not supported for given data source."];
                 }
             }
             result(nil);

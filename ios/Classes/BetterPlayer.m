@@ -45,6 +45,10 @@ BetterPlayer *_pipPrimaryPlayer;
 - (nonnull UIView *)view {
     BetterPlayerView *playerView = [[BetterPlayerView alloc] initWithFrame:CGRectZero];
     playerView.player = _player;
+    [playerView observe];
+    
+    [BetterPlayerLogger log:@"player view allocated"];
+    
     return playerView;
 }
 
@@ -393,8 +397,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         AVPlayerItem* item = (AVPlayerItem*)object;
         switch (item.status) {
             case AVPlayerItemStatusFailed:
-                NSLog(@"[BetterPlayer]: Failed to load video:");
-                NSLog(@"%@", item.error.debugDescription);
+                [BetterPlayerLogger log:[NSString stringWithFormat:@"Failed to load video:\n%@", item.error.debugDescription]];
 
                 if (_eventSink != nil) {
                     _eventSink([FlutterError
@@ -656,7 +659,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
        
     self._pictureInPicture = pictureInPicture;
     
-    NSLog(@"[BetterPlayer]: player layer - %@, %@", self._playerLayer, _pipController.playerLayer);
+    [BetterPlayerLogger log:[NSString stringWithFormat:@"PIP player layer - %@, %@", self._playerLayer, _pipController.playerLayer]];
     
     if (@available(iOS 9.0, *)) {
         if (_pipController && self._pictureInPicture && ![_pipController isPictureInPictureActive]) {
@@ -693,7 +696,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         
         return true;
     } else if (!isPrimary && _pipPrimaryPlayer == self) {
-        NSLog(@"[BetterPlayer]: setPIPPrimary:false - PIP controller disposed");
+        [BetterPlayerLogger log:@"setPIPPrimary:false - PIP controller disposed"];
         __playerLayer = NULL;
         _pipController = NULL;
         _pipPrimaryPlayer = NULL;
@@ -754,7 +757,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         UIViewController* vc = [[[UIApplication sharedApplication] keyWindow] rootViewController];
         self._playerLayer.needsDisplayOnBoundsChange = YES;
         
-        NSLog(@"[BetterPlayer]: player layer created");
+        [BetterPlayerLogger log:@"PIP player layer created"];
         
         // We set the opacity to 0.0001 because it is an overlay.
         // Picture-in-picture will show a placeholder over other widgets when better_player is used in a
@@ -765,7 +768,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         vc.view.layer.needsDisplayOnBoundsChange = YES;
         if (@available(iOS 9.0, *)) {
             if (_pipController != nil) {
-                NSLog(@"[BetterPlayer]: PIP controller disposed");
+                [BetterPlayerLogger log:@"PIP controller disposed"];
                 
                 _pipController = NULL;
             }
@@ -792,7 +795,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
        
     if (__playerLayer){
         if (_eventSink != nil) {
-            NSLog(@"[BetterPlayer]: PIP – pip stop event emitted { \"restoreInterface\": %o }", _restoreInterface);
+            [BetterPlayerLogger log:[NSString stringWithFormat:@"PIP – pip stop event emitted { \"restoreInterface\": %o }", _restoreInterface]];
             
             _eventSink(@{@"event" : @"pipStop", @"restore_interface": @(_restoreInterface)});
         }
@@ -811,8 +814,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 #if TARGET_OS_IOS
 
 - (void)pictureInPictureControllerWillStartPictureInPicture:(AVPictureInPictureController *)pictureInPictureController {
-    NSLog(@"[BetterPlayer]: Pre PIP Start – player.rate = %f, _isPlaying = %o",
-          _player.rate, _isPlaying);
+    [BetterPlayerLogger log:[NSString stringWithFormat:@"[BetterPlayer]: Pre PIP Start – player.rate = %f, _isPlaying = %o",
+                             _player.rate, _isPlaying]];
         
     if (_eventSink != nil) {
         _eventSink(@{@"event" : @"pipStart"});
@@ -820,13 +823,13 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)pictureInPictureControllerDidStartPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
-    NSLog(@"[BetterPlayer]: Post PIP Start – player.rate = %f, _isPlaying = %o",
-          _player.rate, _isPlaying);
+    [BetterPlayerLogger log:[NSString stringWithFormat:@"[BetterPlayer]: Post PIP Start – player.rate = %f, _isPlaying = %o",
+                             _player.rate, _isPlaying]];
 }
 
 bool _restoreInterface = false;
 - (void)pictureInPictureController:(AVPictureInPictureController *)pictureInPictureController restoreUserInterfaceForPictureInPictureStopWithCompletionHandler:(void (^)(BOOL))completionHandler {
-    NSLog(@"[BetterPlayer]: PIP Restore interface event – player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying);
+    [BetterPlayerLogger log:[NSString stringWithFormat:@"PIP Restore interface event – player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying]];
     
     _restoreInterface = true;
     _isPlaying = _player.rate > 0;
@@ -850,14 +853,14 @@ bool _restoreInterface = false;
 }
 
 - (void)pictureInPictureControllerWillStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
-    NSLog(@"[BetterPlayer]: Pre PIP Stop – player.rate = %f, _isPlaying = %o",
-          _player.rate, _isPlaying);
+    [BetterPlayerLogger log:[NSString stringWithFormat:@"[BetterPlayer]: Pre PIP Stop – player.rate = %f, _isPlaying = %o",
+                             _player.rate, _isPlaying]];
     _exitingPictureInPicture = true;
     [self disablePictureInPicture];
 }
 
 - (void)pictureInPictureControllerDidStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
-    NSLog(@"[BetterPlayer]: Post PIP Stop – player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying);
+    [BetterPlayerLogger log:[NSString stringWithFormat:@"Post PIP Stop – player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying]];
     _exitingPictureInPicture = false;
     _restoreInterface = false;
 }
@@ -925,7 +928,7 @@ bool _restoreInterface = false;
         [self clear];
     }
     @catch(NSException *exception) {
-        NSLog(exception.debugDescription);
+        [BetterPlayerLogger log:exception.debugDescription force:true];
     }
 }
 
@@ -944,9 +947,9 @@ bool _restoreInterface = false;
         AVPlayerLayer* layer = self._playerLayer;
         self._playerLayer = nil;
         
-        NSLog(@"[BetterPlayer]: player layer disposed");
+        [BetterPlayerLogger log:@"PIP player layer disposed"];
         if (_pipController.playerLayer == layer) {
-            NSLog(@"[BetterPlayer]: pip controller disposed");
+            [BetterPlayerLogger log:@"pip controller disposed"];
             _pipController = nil;
         }
         
