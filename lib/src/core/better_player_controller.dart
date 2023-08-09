@@ -17,6 +17,7 @@ class BetterPlayerController {
   static const String _durationParameter = "duration";
   static const String _progressParameter = "progress";
   static const String _bufferedParameter = "buffered";
+  static const String _isPlayingParameter = "isPlaying";
   static const String _volumeParameter = "volume";
   static const String _speedParameter = "speed";
   static const String _dataSourceParameter = "dataSource";
@@ -1187,6 +1188,12 @@ class BetterPlayerController {
             },
           ),
         );
+        break;
+      case VideoEventType.isPlayingChanged:
+        _postEvent(BetterPlayerEvent(BetterPlayerEventType.isPlayingChanged,
+            parameters: <String, dynamic>{
+              _isPlayingParameter: event.isPlaying,
+            }));
         break;
       case VideoEventType.bufferingStart:
         _postEvent(BetterPlayerEvent(BetterPlayerEventType.bufferingStart));
