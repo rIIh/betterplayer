@@ -525,7 +525,7 @@ internal class BetterPlayer(
                 eventSink.error(
                     "VideoError",
                     "Video player had error - ${error.message}, code: ${error.errorCode}, name: ${error.errorCodeName}",
-                     error.toBundle(),
+                     error.toBundle().toString(),
                 )
             }
         })
