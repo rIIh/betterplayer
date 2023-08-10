@@ -57,15 +57,12 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     private var currentNotificationDataSource: Map<String, Any?>? = null
     private var activity: Activity? = null
     private var activityBinding: ActivityPluginBinding? = null
-    private var pipHandler: Handler? = null
-    private var pipRunnable: Runnable? = null
 
     internal val isInPictureInPictureMode: Boolean
         @RequiresApi(Build.VERSION_CODES.N)
         get() = activity != null && activity!!.isInPictureInPictureMode
 
     private val pipActionsReceiver = PIPActionsReceiver(this)
-    private val homeButtonReceiver = HomeButtonReceiver(this)
 
     override fun onAttachedToEngine(binding: FlutterPluginBinding) {
         val loader = FlutterLoader()
@@ -127,9 +124,6 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         }
 
         activity?.registerReceiver(pipActionsReceiver, PIPActionsReceiver.INTENT_FILTER)
-        activity?.registerReceiver(
-            homeButtonReceiver, IntentFilter(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
-        )
     }
 
     override fun onDetachedFromActivityForConfigChanges() {}
@@ -139,7 +133,6 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     override fun onDetachedFromActivity() {
         activityBinding?.removeOnUserLeaveHintListener(userLeaveHintListener)
         activity?.unregisterReceiver(pipActionsReceiver)
-        activity?.unregisterReceiver(homeButtonReceiver)
     }
 
     private fun onUserLeave() {
@@ -568,11 +561,12 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         rect?.let { lastPlayerRects[player] = rect }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            activity!!.enterPictureInPictureMode(
+            val isPipEntered = activity!!.enterPictureInPictureMode(
                 updatePictureInPictureParams(player)
             )
-            startPictureInPictureListenerTimer(player)
-            player.onPictureInPictureStatusChanged(true)
+            if (isPipEntered) {
+                player.onPictureInPictureStatusChanged(true)
+            }
             currentPIPPlayer = player
         }
     }
@@ -649,25 +643,8 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     }
 
     private fun disablePictureInPicture(player: BetterPlayer) {
-        stopPipHandler()
         activity!!.moveTaskToBack(false)
-        player.onPictureInPictureStatusChanged(false)
         currentPIPPlayer = null
-    }
-
-    private fun startPictureInPictureListenerTimer(player: BetterPlayer) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            pipHandler = Handler(Looper.getMainLooper())
-            pipRunnable = Runnable {
-                if (activity!!.isInPictureInPictureMode) {
-                    pipHandler!!.postDelayed(pipRunnable!!, 100)
-                } else {
-                    player.onPictureInPictureStatusChanged(false)
-                    stopPipHandler()
-                }
-            }
-            pipHandler!!.post(pipRunnable!!)
-        }
     }
 
     private fun dispose(player: BetterPlayer, textureId: Long) {
@@ -675,10 +652,6 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
         videoPlayers.remove(textureId)
         dataSources.remove(textureId)
-
-        if (currentPIPPlayer == player) {
-            stopPipHandler()
-        }
 
         videoPlayerListeners.remove(player)?.cancel()
 
@@ -695,14 +668,6 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         }
 
         return null
-    }
-
-    private fun stopPipHandler() {
-        if (pipHandler != null) {
-            pipHandler!!.removeCallbacksAndMessages(null)
-            pipHandler = null
-        }
-        pipRunnable = null
     }
 
     /**
