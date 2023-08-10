@@ -329,7 +329,9 @@ bool _remoteCommandsInitialized = false;
         result(nil);
     } else if ([@"create" isEqualToString:call.method]) {
         BetterPlayer* player = [[BetterPlayer alloc] initWithFrame:CGRectZero];
-        [self onPlayerSetup:player result:result];
+        [self onPlayerSetup:player
+                     result:result
+        ];
     } else {
         NSDictionary* argsMap = call.arguments;
         int64_t textureId = ((NSNumber*)argsMap[@"textureId"]).unsignedIntegerValue;
@@ -448,12 +450,16 @@ bool _remoteCommandsInitialized = false;
         } else if ([@"absolutePosition" isEqualToString:call.method]) {
             result(@([player absolutePosition]));
         } else if ([@"seekTo" isEqualToString:call.method]) {
-            [player seekTo:[argsMap[@"location"] intValue] result:result];
+            [player seekTo:[argsMap[@"location"] intValue]
+                    result:result
+            ];
         } else if ([@"pause" isEqualToString:call.method]) {
             [player pause];
             result(nil);
         } else if ([@"setSpeed" isEqualToString:call.method]) {
-            [player setSpeed:[[argsMap objectForKey:@"speed"] doubleValue] result:result];
+            [player setSpeed:[[argsMap objectForKey:@"speed"] doubleValue]
+                      result:result
+            ];
         }else if ([@"setTrackParameters" isEqualToString:call.method]) {
             int width = [argsMap[@"width"] intValue];
             int height = [argsMap[@"height"] intValue];
@@ -463,14 +469,17 @@ bool _remoteCommandsInitialized = false;
             result(nil);
         } else if ([@"enablePictureInPicture" isEqualToString:call.method]){
             [player enablePictureInPicture];
+            result(nil);
         } else if ([@"setPIPPrimary" isEqualToString:call.method]) {
             [player setPIPPrimary:[argsMap[@"isPrimary"] boolValue]];
+            result(nil);
         } else if ([@"setPictureInPictureOverlayRect" isEqualToString:call.method]){
             double left = [argsMap[@"left"] doubleValue];
             double top = [argsMap[@"top"] doubleValue];
             double width = [argsMap[@"width"] doubleValue];
             double height = [argsMap[@"height"] doubleValue];
             [player setPictureInPictureOverlayRect:CGRectMake(left, top, width, height)];
+            result(nil);
         } else if ([@"isPictureInPictureSupported" isEqualToString:call.method]){
             if (@available(iOS 9.0, *)){
                 if ([AVPictureInPictureController isPictureInPictureSupported]){
@@ -483,12 +492,15 @@ bool _remoteCommandsInitialized = false;
         } else if ([@"disablePictureInPicture" isEqualToString:call.method]){
             [player disablePictureInPicture];
             [player setPictureInPicture:false];
+            result(nil);
         } else if ([@"setAudioTrack" isEqualToString:call.method]){
             NSString* name = argsMap[@"name"];
             int index = [argsMap[@"index"] intValue];
             [player setAudioTrack:name index: index];
+            result(nil);
         } else if ([@"setMixWithOthers" isEqualToString:call.method]){
             [player setMixWithOthers:[argsMap[@"mixWithOthers"] boolValue]];
+            result(nil);
         } else if ([@"preCache" isEqualToString:call.method]){
             NSDictionary* dataSource = argsMap[@"dataSource"];
             NSString* urlArg = dataSource[@"uri"];
