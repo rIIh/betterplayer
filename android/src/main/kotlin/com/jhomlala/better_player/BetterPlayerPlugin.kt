@@ -290,6 +290,7 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             }
             SET_PIP_PRIMARY -> {
                 setupPIPPrimary(player, call.argument(PIP_PRIMARY_PARAMETER)!!)
+                result.success(null)
             }
             ENABLE_PICTURE_IN_PICTURE_METHOD -> {
                 try {
