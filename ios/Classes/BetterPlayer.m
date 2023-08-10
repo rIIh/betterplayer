@@ -761,7 +761,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     if (_pipPrimaryPlayer != self) return;
     
     AVPlayerLayer* layer = [self usePlayerLayer];
-    if (_player && !_pipController.isPictureInPictureActive && layer != NULL) {
+    if (_player && !_pipController.isPictureInPictureActive && layer != NULL && self.frame != nil && !CGRectIsEmpty(*(self.frame))) {
         layer.frame = *(self.frame);
     }
 }
@@ -800,7 +800,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         
         [self setupPipController];
         
-        if (self.frame != NULL) {
+        if (self.frame != nil && !CGRectIsEmpty(*(self.frame))) {
             [self setPictureInPictureOverlayRect:*(self.frame)];
         }
         
