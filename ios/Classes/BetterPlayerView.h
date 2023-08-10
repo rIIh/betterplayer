@@ -10,5 +10,4 @@
 @interface BetterPlayerView : UIView
 @property AVPlayer *player;
 @property (readonly) AVPlayerLayer *playerLayer;
-- (void)observe;
 @end

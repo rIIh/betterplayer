@@ -45,7 +45,6 @@ BetterPlayer *_pipPrimaryPlayer;
 - (nonnull UIView *)view {
     BetterPlayerView *playerView = [[BetterPlayerView alloc] initWithFrame:CGRectZero];
     playerView.player = _player;
-    [playerView observe];
     
     [BetterPlayerLogger log:@"player view allocated"];
     
@@ -718,9 +717,10 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         _pipPrimaryPlayer = self;
         [self usePlayerLayer];
         
+        [BetterPlayerLogger log:@"setPIPPrimary: true - PIP controller created"];
         return true;
     } else if (!isPrimary && _pipPrimaryPlayer == self) {
-        [BetterPlayerLogger log:@"setPIPPrimary:false - PIP controller disposed"];
+        [BetterPlayerLogger log:@"setPIPPrimary: false - PIP controller disposed"];
         __playerLayer = NULL;
         _pipController = NULL;
         _pipPrimaryPlayer = NULL;
