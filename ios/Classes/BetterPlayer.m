@@ -25,6 +25,7 @@ BetterPlayer *_pipPrimaryPlayer;
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super init];
     NSAssert(self, @"super init cannot be nil");
+    _frame = CGRectNull;
     _isInitialized = false;
     _isPlaying = false;
     _disposed = false;
@@ -717,14 +718,17 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         _pipPrimaryPlayer = self;
         [self usePlayerLayer];
         
-        [BetterPlayerLogger log:@"setPIPPrimary: true - PIP controller created"];
+        [BetterPlayerLogger log:@"PIP controller created" method:@"setPIPPrimary(true)"];
         return true;
     } else if (!isPrimary && _pipPrimaryPlayer == self) {
-        [BetterPlayerLogger log:@"setPIPPrimary: false - PIP controller disposed"];
+        [BetterPlayerLogger log:@"PIP controller disposed" method:@"setPIPPrimary(false)"];
         __playerLayer = NULL;
         _pipController = NULL;
         _pipPrimaryPlayer = NULL;
         
+        _exitingPictureInPicture = false;
+        _restoreInterface = false;
+
         return true;
     }
     
@@ -756,13 +760,13 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)setPictureInPictureOverlayRect:(CGRect)frame {
-    self.frame = &(frame);
+    self.frame = frame;
     
     if (_pipPrimaryPlayer != self) return;
     
     AVPlayerLayer* layer = [self usePlayerLayer];
-    if (_player && !_pipController.isPictureInPictureActive && layer != NULL && self.frame != nil && !CGRectIsEmpty(*(self.frame))) {
-        layer.frame = *(self.frame);
+    if (_player && !_pipController.isPictureInPictureActive && layer != NULL && !CGRectIsEmpty(self.frame)) {
+        layer.frame = self.frame;
     }
 }
 
@@ -799,9 +803,9 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         }
         
         [self setupPipController];
-        
-        if (self.frame != nil && !CGRectIsEmpty(*(self.frame))) {
-            [self setPictureInPictureOverlayRect:*(self.frame)];
+                
+        if (!CGRectIsEmpty(self.frame)) {
+            [self setPictureInPictureOverlayRect:self.frame];
         }
         
         return self._playerLayer;
@@ -877,14 +881,14 @@ bool _restoreInterface = false;
 }
 
 - (void)pictureInPictureControllerWillStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
-    [BetterPlayerLogger log:[NSString stringWithFormat:@"[BetterPlayer]: Pre PIP Stop – player.rate = %f, _isPlaying = %o",
+    [BetterPlayerLogger log:[NSString stringWithFormat:@"PIP Will Stop – player.rate = %f, _isPlaying = %o",
                              _player.rate, _isPlaying]];
     _exitingPictureInPicture = true;
     [self disablePictureInPicture];
 }
 
 - (void)pictureInPictureControllerDidStopPictureInPicture:(AVPictureInPictureController *)pictureInPictureController  API_AVAILABLE(ios(9.0)){
-    [BetterPlayerLogger log:[NSString stringWithFormat:@"Post PIP Stop – player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying]];
+    [BetterPlayerLogger log:[NSString stringWithFormat:@"PIP Did Stop – player.rate = %f, _isPlaying = %o", _player.rate, _isPlaying]];
     _exitingPictureInPicture = false;
     _restoreInterface = false;
 }
