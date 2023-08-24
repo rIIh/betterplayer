@@ -589,7 +589,15 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun updatePictureInPictureParams(player: BetterPlayer?): PictureInPictureParams {
         if (player == null) {
-            val params = PictureInPictureParams.Builder().build()
+            val builder = PictureInPictureParams.Builder()
+            builder.setActions(emptyList())
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                builder.setAutoEnterEnabled(false)
+                builder.setSeamlessResizeEnabled(false)
+            }
+
+            val params = builder.build()
             activity!!.setPictureInPictureParams(params)
             return params
         }
