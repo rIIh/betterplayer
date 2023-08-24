@@ -101,7 +101,7 @@ abstract class VideoPlayerPlatform {
   }
 
   /// Starts the video playback.
-  Future<void> play(int? textureId) {
+  Future<void> play(int? textureId, {bool pauseOthers = false}) {
     throw UnimplementedError('play() has not been implemented.');
   }
 

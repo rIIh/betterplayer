@@ -248,12 +248,15 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                 result.success(null)
             }
             PLAY_METHOD -> {
-                for (i in 0 until videoPlayers.size()) {
-                    val key: Long = videoPlayers.keyAt(i)
-                    val otherPlayer = videoPlayers.get(key)
+                val pauseOthers = call.argument<Boolean>(PAUSE_OTHERS_PARAMETER)!!
+                if (pauseOthers) {
+                    for (i in 0 until videoPlayers.size()) {
+                        val key: Long = videoPlayers.keyAt(i)
+                        val otherPlayer = videoPlayers.get(key)
 
-                    if (otherPlayer != player) {
-                        otherPlayer.pause()
+                        if (otherPlayer != player) {
+                            otherPlayer.pause()
+                        }
                     }
                 }
 
@@ -781,6 +784,7 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         private const val FORMAT_HINT_PARAMETER = "formatHint"
         private const val TEXTURE_ID_PARAMETER = "textureId"
         private const val LOOPING_PARAMETER = "looping"
+        private const val PAUSE_OTHERS_PARAMETER = "pauseOthers"
         private const val VOLUME_PARAMETER = "volume"
         private const val LOCATION_PARAMETER = "location"
         private const val SPEED_PARAMETER = "speed"

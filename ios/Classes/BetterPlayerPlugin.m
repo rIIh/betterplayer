@@ -442,8 +442,19 @@ bool _remoteCommandsInitialized = false;
             [player setVolume:[argsMap[@"volume"] doubleValue]];
             result(nil);
         } else if ([@"play" isEqualToString:call.method]) {
+            bool pauseOthers = [argsMap[@"pauseOthers"] boolValue];
+            if (pauseOthers) {
+                for (NSNumber* otherTextureId in _players) {
+                    BetterPlayer* otherPlayer = _players[otherTextureId];
+                    if (player == otherPlayer) continue;
+                    
+                    [otherPlayer pause];
+                }
+            }
+            
             [self setupRemoteNotification:player];
             [player play];
+            
             result(nil);
         } else if ([@"position" isEqualToString:call.method]) {
             result(@([player position]));

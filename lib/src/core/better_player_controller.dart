@@ -263,10 +263,10 @@ class BetterPlayerController {
           .addAll(betterPlayerDataSource.subtitles!);
     }
 
-    ///Process data source
+    /// Process data source
     await _setupDataSource(betterPlayerDataSource);
     if (_isDataSourceAsms(betterPlayerDataSource)) {
-      _setupAsmsDataSource(betterPlayerDataSource).then((dynamic value) {
+      await _setupAsmsDataSource(betterPlayerDataSource).then((dynamic value) {
         _setupSubtitles();
       });
     } else {
@@ -276,18 +276,17 @@ class BetterPlayerController {
     setTrack(BetterPlayerAsmsTrack.defaultTrack());
   }
 
-  ///Configure subtitles based on subtitles source.
+  /// Configure subtitles based on subtitles source.
   void _setupSubtitles() {
-    _betterPlayerSubtitlesSourceList.add(
-      BetterPlayerSubtitlesSource(type: BetterPlayerSubtitlesSourceType.none),
-    );
     final defaultSubtitle = _betterPlayerSubtitlesSourceList
         .firstWhereOrNull((element) => element.selectedByDefault == true);
 
-    ///Setup subtitles (none is default)
-    setupSubtitleSource(
-        defaultSubtitle ?? _betterPlayerSubtitlesSourceList.last,
-        sourceInitialize: true);
+    /// Setup subtitles (null is default)
+    if (_betterPlayerSubtitlesSourceList.isNotEmpty) {
+      setupSubtitleSource(
+          defaultSubtitle ?? _betterPlayerSubtitlesSourceList.last,
+          sourceInitialize: true);
+    }
   }
 
   ///Check if given [betterPlayerDataSource] is HLS / DASH-type data source.
@@ -318,19 +317,20 @@ class BetterPlayerController {
       if (betterPlayerDataSource?.useAsmsSubtitles == true) {
         final List<BetterPlayerAsmsSubtitle> asmsSubtitles =
             _response.subtitles ?? [];
-        asmsSubtitles.forEach((BetterPlayerAsmsSubtitle asmsSubtitle) {
-          _betterPlayerSubtitlesSourceList.add(
-            BetterPlayerSubtitlesSource(
+        _betterPlayerSubtitlesSourceList.addAll(
+          asmsSubtitles.map(
+            (subtitles) => BetterPlayerSubtitlesSource(
               type: BetterPlayerSubtitlesSourceType.network,
-              name: asmsSubtitle.name,
-              urls: asmsSubtitle.realUrls,
-              asmsIsSegmented: asmsSubtitle.isSegmented,
-              asmsSegmentsTime: asmsSubtitle.segmentsTime,
-              asmsSegments: asmsSubtitle.segments,
-              selectedByDefault: asmsSubtitle.isDefault,
+              name: subtitles.name,
+              urls: subtitles.realUrls,
+              asmsIsSegmented: subtitles.isSegmented,
+              asmsSegmentsTime: subtitles.segmentsTime,
+              asmsSegments: subtitles.segments,
+              selectedByDefault: subtitles.isDefault,
+              language: subtitles.language,
             ),
-          );
-        });
+          ),
+        );
       }
 
       ///Load audio tracks
@@ -344,15 +344,27 @@ class BetterPlayerController {
     }
   }
 
-  ///Setup subtitles to be displayed from given subtitle source.
-  ///If subtitles source is segmented then don't load videos at start. Videos
-  ///will load with just in time policy.
-  Future<void> setupSubtitleSource(BetterPlayerSubtitlesSource subtitlesSource,
+  /// Setup subtitles to be displayed from given subtitle source.
+  ///
+  /// If subtitles source is segmented then don't load videos at start. Videos
+  /// will load with just in time policy.
+  ///
+  /// If [subtitlesSource] == null, then subtitles will be disabled.
+  Future<void> setupSubtitleSource(BetterPlayerSubtitlesSource? subtitlesSource,
       {bool sourceInitialize = false}) async {
     _betterPlayerSubtitlesSource = subtitlesSource;
     subtitlesLines.clear();
     _asmsSegmentsLoaded.clear();
     _asmsSegmentsLoading = false;
+
+    if (subtitlesSource == null) {
+      _postEvent(BetterPlayerEvent(BetterPlayerEventType.changedSubtitles));
+      if (!_disposed && !sourceInitialize) {
+        _postControllerEvent(BetterPlayerControllerEvent.changeSubtitles);
+      }
+
+      return;
+    }
 
     if (subtitlesSource.type != BetterPlayerSubtitlesSourceType.none) {
       if (subtitlesSource.asmsIsSegmented == true) {
@@ -611,13 +623,13 @@ class BetterPlayerController {
 
   ///Start video playback. Play will be triggered only if current lifecycle state
   ///is resumed.
-  Future<void> play() async {
+  Future<void> play({bool pauseOthers = false}) async {
     if (videoPlayerController == null) {
       throw StateError("The data source has not been initialized");
     }
 
     if (_appLifecycleState == AppLifecycleState.resumed) {
-      await videoPlayerController!.play();
+      await videoPlayerController!.play(pauseOthers: pauseOthers);
       _hasCurrentDataSourceStarted = true;
       _wasPlayingBeforePause = null;
       _postEvent(BetterPlayerEvent(BetterPlayerEventType.play));

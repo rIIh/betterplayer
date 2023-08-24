@@ -11,7 +11,7 @@ class MockVideoPlayerController extends VideoPlayerController {
   double speed = 1.0;
 
   @override
-  Future<void> play() async {
+  Future<void> play({bool pauseOthers = false}) async {
     value = value.copyWith(isPlaying: true);
     return;
   }

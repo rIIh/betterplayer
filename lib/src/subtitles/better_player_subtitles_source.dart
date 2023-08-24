@@ -17,6 +17,9 @@ class BetterPlayerSubtitlesSource {
   ///Content of subtitles, used when type is memory
   final String? content;
 
+  /// Subtitles language.
+  final String? language;
+
   ///Subtitles selected by default, without user interaction
   final bool? selectedByDefault;
 
@@ -46,6 +49,7 @@ class BetterPlayerSubtitlesSource {
     this.asmsIsSegmented,
     this.asmsSegmentsTime,
     this.asmsSegments,
+    this.language,
   });
 
   ///Creates list with only one subtitles

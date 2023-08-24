@@ -451,9 +451,9 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   /// This method returns a future that completes as soon as the "play" command
   /// has been sent to the platform, not when playback itself is totally
   /// finished.
-  Future<void> play() async {
+  Future<void> play({bool pauseOthers = false}) async {
     value = value.copyWith(isPlaying: true);
-    await _applyPlayPause();
+    await _applyPlayPause(pauseOthers: pauseOthers);
   }
 
   /// Sets whether or not the video should loop after playing once. See also
@@ -518,13 +518,13 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     routine(_timer!);
   }
 
-  Future<void> _applyPlayPause() async {
+  Future<void> _applyPlayPause({bool pauseOthers = false}) async {
     if (!_created || _isDisposed) return;
 
     _restartTimer();
 
     if (value.isPlaying) {
-      await _videoPlayerPlatform.play(_textureId);
+      await _videoPlayerPlatform.play(_textureId, pauseOthers: pauseOthers);
     } else {
       await _videoPlayerPlatform.pause(_textureId);
     }
