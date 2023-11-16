@@ -4,6 +4,7 @@ import 'package:better_player/src/subtitles/better_player_subtitle.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 
+// TODO(@melvspace): enhance performance. No need to re-render every few frames?
 class BetterPlayerSubtitlesDrawer extends StatefulWidget {
   final List<BetterPlayerSubtitle> subtitles;
   final BetterPlayerController betterPlayerController;

@@ -65,8 +65,10 @@ class BetterPlayerConfiguration {
   /// Defines a event listener where video player events will be send
   final Function(BetterPlayerEvent)? eventListener;
 
-  ///Defines subtitles configuration
-  final BetterPlayerSubtitlesConfiguration subtitlesConfiguration;
+  /// Defines subtitles configuration
+  ///
+  /// If [null] then no subtitles will shown.
+  final BetterPlayerSubtitlesConfiguration? subtitlesConfiguration;
 
   ///Defines controls configuration
   final BetterPlayerControlsConfiguration controlsConfiguration;
@@ -144,7 +146,7 @@ class BetterPlayerConfiguration {
     ],
     this.routePageBuilder,
     this.eventListener,
-    this.subtitlesConfiguration = const BetterPlayerSubtitlesConfiguration(),
+    this.subtitlesConfiguration,
     this.controlsConfiguration = const BetterPlayerControlsConfiguration(),
     this.fit = BoxFit.fill,
     this.rotation = 0,

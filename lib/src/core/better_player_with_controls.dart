@@ -21,7 +21,7 @@ class BetterPlayerWithControls extends StatefulWidget {
 }
 
 class _BetterPlayerWithControlsState extends State<BetterPlayerWithControls> {
-  BetterPlayerSubtitlesConfiguration get subtitlesConfiguration =>
+  BetterPlayerSubtitlesConfiguration? get subtitlesConfiguration =>
       widget.controller!.betterPlayerConfiguration.subtitlesConfiguration;
 
   BetterPlayerControlsConfiguration get controlsConfiguration =>
@@ -139,12 +139,13 @@ class _BetterPlayerWithControlsState extends State<BetterPlayerWithControls> {
           ),
           betterPlayerController.betterPlayerConfiguration.overlay ??
               Container(),
-          BetterPlayerSubtitlesDrawer(
-            betterPlayerController: betterPlayerController,
-            betterPlayerSubtitlesConfiguration: subtitlesConfiguration,
-            subtitles: betterPlayerController.subtitlesLines,
-            playerVisibilityStream: playerVisibilityStreamController.stream,
-          ),
+          if (subtitlesConfiguration != null)
+            BetterPlayerSubtitlesDrawer(
+              betterPlayerController: betterPlayerController,
+              betterPlayerSubtitlesConfiguration: subtitlesConfiguration!,
+              subtitles: betterPlayerController.subtitlesLines,
+              playerVisibilityStream: playerVisibilityStreamController.stream,
+            ),
           if (!placeholderOnTop) _buildPlaceholder(betterPlayerController),
           _buildControls(context, betterPlayerController),
         ],
