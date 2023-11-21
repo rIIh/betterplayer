@@ -9,12 +9,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'video_player_platform_interface.dart';
 
+typedef LogCallback = void Function(String message);
+
 const MethodChannel _channel = MethodChannel('better_player_channel');
 
 /// An implementation of [VideoPlayerPlatform] that uses method channels.
 class MethodChannelVideoPlayer extends VideoPlayerPlatform {
+  LogCallback onLogged = (_) {};
+
   @override
   Future<void> init() {
+    _channel.setMethodCallHandler(_handleMethodCall);
     return _channel.invokeMethod<void>('init');
   }
 
@@ -462,6 +467,13 @@ class MethodChannelVideoPlayer extends VideoPlayerPlatform {
       );
     } else {
       return Texture(textureId: textureId!);
+    }
+  }
+
+  Future<void> _handleMethodCall(MethodCall call) async {
+    switch (call.method) {
+      case "log":
+        onLogged.call(call.arguments["message"]);
     }
   }
 

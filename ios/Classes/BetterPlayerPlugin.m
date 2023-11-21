@@ -14,6 +14,7 @@
 NSMutableDictionary* _dataSourceDict;
 NSMutableDictionary*  _timeObserverIdDict;
 NSMutableDictionary*  _artworkImageDict;
+FlutterMethodChannel* _channel;
 CacheManager* _cacheManager;
 int texturesCount = -1;
 BetterPlayer* _notificationPlayer;
@@ -22,12 +23,11 @@ bool _remoteCommandsInitialized = false;
 
 #pragma mark - FlutterPlugin protocol
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
-    FlutterMethodChannel* channel =
-    [FlutterMethodChannel methodChannelWithName:@"better_player_channel"
+    _channel = [FlutterMethodChannel methodChannelWithName:@"better_player_channel"
                                 binaryMessenger:[registrar messenger]];
     BetterPlayerPlugin* instance = [[BetterPlayerPlugin alloc] initWithRegistrar:registrar];
-    [registrar addMethodCallDelegate:instance channel:channel];
-    //[registrar publish:instance];
+    
+    [registrar addMethodCallDelegate:instance channel:_channel];
     [registrar registerViewFactory:instance withId:@"com.jhomlala/better_player"];
 }
 
@@ -42,6 +42,11 @@ bool _remoteCommandsInitialized = false;
     _dataSourceDict = [NSMutableDictionary dictionary];
     _cacheManager = [[CacheManager alloc] init];
     [_cacheManager setup];
+    
+    BetterPlayerLogger.onLogged = ^void(NSString* message){
+        [_channel invokeMethod:@"log" arguments:@{@"message":message}];
+    };
+    
     return self;
 }
 

@@ -57,6 +57,7 @@ BetterPlayer *_pipPrimaryPlayer;
        
     if (!self._observersAdded){
         [_player addObserver:self forKeyPath:@"rate" options:0 context:nil];
+        [_player addObserver:self forKeyPath:@"reasonForWaitingToPlay" options:0 context:nil];
         [item addObserver:self forKeyPath:@"loadedTimeRanges" options:0 context:timeRangeContext];
         [item addObserver:self forKeyPath:@"status" options:0 context:statusContext];
         [item addObserver:self forKeyPath:@"presentationSize" options:0 context:presentationSizeContext];
@@ -316,13 +317,16 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 
 -(void)startStalledCheck{
     if (_disposed) return;
+    [BetterPlayerLogger log:[NSString stringWithFormat:@"Do stall check - %o", _stalledCount]];
        
     if (_player.currentItem.playbackLikelyToKeepUp ||
         [self availableDuration] - CMTimeGetSeconds(_player.currentItem.currentTime) > 10.0) {
+        [BetterPlayerLogger log:[NSString stringWithFormat:@"Stall check completed after %o iterations", _stalledCount]];
         [self play];
     } else {
         _stalledCount++;
-        if (_stalledCount > 60){
+        if (_stalledCount > 60) {
+            [BetterPlayerLogger log:@"Failed to load video: playback stalled"];
             if (_eventSink != nil) {
                 _eventSink([FlutterError
                         errorWithCode:@"VideoError"
@@ -331,8 +335,8 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
             }
             return;
         }
+        
         [self performSelector:@selector(startStalledCheck) withObject:nil afterDelay:1];
-
     }
 }
 
@@ -357,6 +361,10 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
                        context:(void*)context {
 
     if (_disposed) return;
+    
+    if ([path isEqualToString:@"reasonForWaitingToPlay"]) {
+        [BetterPlayerLogger log:[NSString stringWithFormat:@"Reason for waiting to play change - %@", _player.reasonForWaitingToPlay] force:true];
+    }
        
     if ([path isEqualToString:@"rate"]) {
         if (@available(iOS 10.0, *)) {
@@ -371,6 +379,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
                     _isPlaying = false;
                 }
                     
+                [BetterPlayerLogger log:[NSString stringWithFormat:@"Playing state changed - isPlaying: %o", _isPlaying]];
                 [self emitIsPlayingChanged];
             }
         }
@@ -379,6 +388,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
             CMTIME_COMPARE_INLINE(_player.currentItem.currentTime, >, kCMTimeZero) && //if video was started
             CMTIME_COMPARE_INLINE(_player.currentItem.currentTime, <, _player.currentItem.duration) && //but not yet finished
             _isPlaying) { //instance variable to handle overall state (changed to YES when user triggers playback)
+            [BetterPlayerLogger log:@"Stall detected - handling"];
             [self handleStalled];
         }
     }
@@ -406,6 +416,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         if (_player.rate > 0 && self._playerLayer == nil && _pipPrimaryPlayer == self)
             [self usePlayerLayer];
         
+        [BetterPlayerLogger log:@"Ready to play because 'presentationSizeContext'"];
         [self onReadyToPlay];
     }
 
@@ -413,7 +424,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         AVPlayerItem* item = (AVPlayerItem*)object;
         switch (item.status) {
             case AVPlayerItemStatusFailed:
-                [BetterPlayerLogger log:[NSString stringWithFormat:@"Failed to load video:\n%@", item.error.debugDescription]];
+                [BetterPlayerLogger log:[NSString stringWithFormat:@"Failed to load video:\n%lo - %@", item.error.code, item.error.debugDescription] force:true];
 
                 if (_eventSink != nil) {
                     _eventSink([FlutterError
@@ -426,10 +437,12 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
             case AVPlayerItemStatusUnknown:
                 break;
             case AVPlayerItemStatusReadyToPlay:
+                [BetterPlayerLogger log:@"Ready to play"];
                 [self onReadyToPlay];
                 break;
         }
     } else if (context == playbackLikelyToKeepUpContext) {
+        [BetterPlayerLogger log:[NSString stringWithFormat:@"isPlaybackLikelyToKeepUp changed - %o", [[_player currentItem] isPlaybackLikelyToKeepUp]]];
         if ([[_player currentItem] isPlaybackLikelyToKeepUp]) {
             [self updatePlayingState];
             if (_eventSink != nil) {
@@ -437,10 +450,12 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
             }
         }
     } else if (context == playbackBufferEmptyContext) {
+        [BetterPlayerLogger log:@"Buffer is empty"];
         if (_eventSink != nil) {
             _eventSink(@{@"event" : @"bufferingStart", @"key" : _key});
         }
     } else if (context == playbackBufferFullContext) {
+        [BetterPlayerLogger log:@"Buffer filled"];
         if (_eventSink != nil) {
             _eventSink(@{@"event" : @"bufferingEnd", @"key" : _key});
         }
@@ -491,11 +506,13 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 
         // The player has not yet initialized.
         if (!onlyAudio && height == CGSizeZero.height && width == CGSizeZero.width) {
+            [BetterPlayerLogger log:@"Player not initialized yet - no size" force:true];
             return;
         }
         const BOOL isLive = CMTIME_IS_INDEFINITE([_player currentItem].duration);
         // The player may be initialized but still needs to determine the duration.
         if (isLive == false && [self duration] == 0) {
+            [BetterPlayerLogger log:@"Player not initialized yet - no duration" force:true];
             return;
         }
 
@@ -512,6 +529,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 
         _isInitialized = true;
         [self updatePlayingState];
+        [BetterPlayerLogger log:@"Player is initialized"];
         _eventSink(@{
             @"event" : @"initialized",
             @"duration" : @([self duration]),
@@ -535,6 +553,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     _isStalledCheckStarted = false;
     _isPlaying = true;
     [self updatePlayingState];
+    [BetterPlayerLogger log:@"Play called"];
 }
 
 - (void)pause {
@@ -548,6 +567,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
     
     _isPlaying = false;
     [self updatePlayingState];
+    [BetterPlayerLogger log:@"Pause called"];
 }
 
 - (int64_t)position {
@@ -583,6 +603,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
         return;
     }
 
+    [BetterPlayerLogger log:[NSString stringWithFormat:@"Seek to called - %d", location]];
     [_player seekToTime:CMTimeMake(location, 1000)
         toleranceBefore:kCMTimeZero
         toleranceAfter:kCMTimeZero
@@ -596,6 +617,7 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
 - (void)seekToWithTolerance:(int)location {
     if (_disposed) return;
 
+    [BetterPlayerLogger log:[NSString stringWithFormat:@"Seek to with tolerance called - %d", location]];
     [_player seekToTime:CMTimeMake(location, 1000)
       completionHandler:^(BOOL result) {
         self->_player.currentItem.videoComposition = [self->_player.currentItem.videoComposition mutableCopy];

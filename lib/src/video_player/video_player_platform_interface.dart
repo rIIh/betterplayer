@@ -52,6 +52,9 @@ abstract class VideoPlayerPlatform {
     _instance = instance;
   }
 
+  LogCallback get onLogged;
+  set onLogged(LogCallback value);
+
   /// Initializes the platform interface and disposes all existing players.
   ///
   /// This method is called when the plugin is first initialized
