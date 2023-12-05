@@ -1109,7 +1109,7 @@ class BetterPlayerController {
               " key?");
           return;
         }
-        final Offset position = renderBox.localToGlobal(Offset.zero);
+
         return videoPlayerController?.enablePictureInPicture();
       } else {
         BetterPlayerUtils.log("Unsupported PiP in current platform.");
@@ -1326,7 +1326,7 @@ class BetterPlayerController {
   ///cache started for given [betterPlayerDataSource] then it will be ignored.
   Future<void> stopPreCache(
       BetterPlayerDataSource betterPlayerDataSource) async {
-    return VideoPlayerController?.stopPreCache(betterPlayerDataSource.url,
+    return VideoPlayerController.stopPreCache(betterPlayerDataSource.url,
         betterPlayerDataSource.cacheConfiguration?.key);
   }
 

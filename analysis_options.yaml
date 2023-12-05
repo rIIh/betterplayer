@@ -1,8 +1,8 @@
-#include: package:lint/analysis_options_package.yaml
+include: package:lints/recommended.yaml
 
 analyzer:
-  strong-mode:
-    implicit-dynamic: false
+  errors:
+    always_declare_return_types: warning
 
 linter:
   rules:
@@ -15,8 +15,15 @@ linter:
     prefer_constructors_over_static_methods: false
     sort_unnamed_constructors_first: false
     sized_box_for_whitespace: false
-    invalid_dependency: false
     sort_pub_dependencies: false
     avoid_unnecessary_containers: false
     use_setters_to_change_properties: false
 
+    # @melvspace: extra rules
+    always_declare_return_types: true
+    always_use_package_imports: true
+    cancel_subscriptions: true
+    test_types_in_equals: true
+    throw_in_finally: true
+    unnecessary_statements: true
+    unnecessary_breaks: true
