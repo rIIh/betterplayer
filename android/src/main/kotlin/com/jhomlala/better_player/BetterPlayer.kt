@@ -437,6 +437,7 @@ internal class BetterPlayer(
                 DefaultDataSource.Factory(context, mediaDataSourceFactory)
             )
                 .apply {
+                    setLoadErrorHandlingPolicy(DataSourceUtils.CustomPolicy())
                     if (drmSessionManagerProvider != null) {
                         setDrmSessionManagerProvider(drmSessionManagerProvider!!)
                     }
@@ -447,6 +448,7 @@ internal class BetterPlayer(
                 DefaultDataSource.Factory(context, mediaDataSourceFactory)
             )
                 .apply {
+                    setLoadErrorHandlingPolicy(DataSourceUtils.CustomPolicy())
                     if (drmSessionManagerProvider != null) {
                         setDrmSessionManagerProvider(drmSessionManagerProvider!!)
                     }
@@ -454,6 +456,7 @@ internal class BetterPlayer(
                 .createMediaSource(mediaItem)
             C.CONTENT_TYPE_HLS -> HlsMediaSource.Factory(mediaDataSourceFactory)
                 .apply {
+                    setLoadErrorHandlingPolicy(DataSourceUtils.CustomPolicy())
                     if (drmSessionManagerProvider != null) {
                         setDrmSessionManagerProvider(drmSessionManagerProvider!!)
                     }
@@ -464,6 +467,7 @@ internal class BetterPlayer(
                 DefaultExtractorsFactory()
             )
                 .apply {
+                    setLoadErrorHandlingPolicy(DataSourceUtils.CustomPolicy())
                     if (drmSessionManagerProvider != null) {
                         setDrmSessionManagerProvider(drmSessionManagerProvider!!)
                     }
