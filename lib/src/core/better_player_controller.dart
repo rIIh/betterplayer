@@ -1176,6 +1176,11 @@ class BetterPlayerController {
   ///Handle VideoEvent when remote controls notification / PiP is shown
   void _handleVideoEvent(VideoEvent event) async {
     switch (event.eventType) {
+      case VideoEventType.notification:
+        _postEvent(BetterPlayerEvent(BetterPlayerEventType.notification,
+            parameters: {"code": event.code}));
+        break;
+
       case VideoEventType.play:
         _postEvent(BetterPlayerEvent(BetterPlayerEventType.play));
         break;

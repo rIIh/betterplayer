@@ -8,7 +8,7 @@ homepage: https://github.com/jhomlala/betterplayer
 documentation: https://jhomlala.github.io/betterplayer/
 
 environment:
-  sdk: '>=2.15.0 <3.0.0'
+  sdk: '>=3.0.0 <4.0.0'
   flutter: ">=3.0.0"
 
 dependencies:

@@ -387,6 +387,7 @@ class VideoEvent {
   VideoEvent({
     required this.eventType,
     required this.key,
+    this.code,
     this.duration,
     this.size,
     this.buffered,
@@ -402,6 +403,9 @@ class VideoEvent {
   ///
   /// Used to determine which video the event belongs to.
   final String? key;
+
+  /// Notification code.
+  final String? code;
 
   /// Should client restore interface on pip stop.
   final bool? restoreInterface;
@@ -484,6 +488,12 @@ enum VideoEventType {
 
   /// Picture in picture mode has been dismissed
   pipStop,
+
+  /// AVNotifications
+  notification,
+
+  /// Errors
+  exception,
 
   /// An unknown event has been received.
   unknown,

@@ -77,6 +77,9 @@ BetterPlayer *_pipPrimaryPlayer;
                                                  selector:@selector(itemDidPlayToEndTime:)
                                                      name:AVPlayerItemDidPlayToEndTimeNotification
                                                    object:item];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handlePlaybackStalled:) name:AVPlayerItemPlaybackStalledNotification object:item];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleFailedToPlayToEnd:) name:AVPlayerItemFailedToPlayToEndTimeNotification object:item];
+
         self._observersAdded = true;
     }
 }
@@ -123,18 +126,34 @@ BetterPlayer *_pipPrimaryPlayer;
 }
 
 - (void)itemDidPlayToEndTime:(NSNotification*)notification {
+    [BetterPlayerLogger log:[NSString stringWithFormat:@"AVPlayerItemDidPlayToEndTimeNotification dispatched"]];
+
     if (_isLooping) {
         AVPlayerItem* p = [notification object];
         [p seekToTime:kCMTimeZero completionHandler:nil];
     } else {
         if (_eventSink) {
             _eventSink(@{@"event" : @"completed", @"key" : _key});
-            [ self removeObservers];
-
+            [self removeObservers];
         }
     }
 }
 
+
+- (void)handleFailedToPlayToEnd:(NSNotification*)notification {
+    [BetterPlayerLogger log:[NSString stringWithFormat:@"AVPlayerItemFailedToPlayToEndTimeNotification dispatched"] force:true];
+        
+    _eventSink([FlutterError
+            errorWithCode:@"FailedToPlayToEnd"
+            message:@"AVPlayerItemFailedToPlayToEndTimeNotification dispatched"
+            details:nil]);
+}
+
+- (void)handlePlaybackStalled:(NSNotification *)notification {
+    [BetterPlayerLogger log:[NSString stringWithFormat:@"AVPlayerItemPlaybackStalledNotification dispatched"] force:true];
+
+    _eventSink(@{@"event" : @"notification", @"code": @"PlaybackStalled", @"key" : _key});
+}
 
 static inline CGFloat radiansToDegrees(CGFloat radians) {
     // Input range [-pi, pi] or [-180, 180]
@@ -538,6 +557,19 @@ static inline CGFloat radiansToDegrees(CGFloat radians) {
             @"key" : _key
         });
     }
+}
+
+- (void)retry {
+    AVAsset* asset = [_player currentItem].asset;
+    AVPlayerItem* item = [AVPlayerItem playerItemWithAsset:asset];
+    CMTime position = [_player currentTime];
+    
+    [self removeObservers];
+    [self addObservers:item];
+    [_player replaceCurrentItemWithPlayerItem:item];
+    [_player seekToTime:position];
+        
+    [self updatePlayingState];
 }
 
 - (void)play {
