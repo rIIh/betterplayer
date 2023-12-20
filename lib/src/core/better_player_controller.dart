@@ -452,6 +452,11 @@ class BetterPlayerController {
 
   ///Internal method which invokes videoPlayerController source setup.
   Future _setupDataSource(BetterPlayerDataSource betterPlayerDataSource) async {
+    final allowExternalPlayback =
+        betterPlayerConfiguration.allowExternalPlayback ??
+            _betterPlayerDataSource?.allowExternalPlayback ??
+            false;
+
     switch (betterPlayerDataSource.type) {
       case BetterPlayerDataSourceType.network:
         await videoPlayerController?.setNetworkDataSource(
@@ -483,6 +488,7 @@ class BetterPlayerController {
               _betterPlayerDataSource?.notificationConfiguration?.activityName,
           clearKey: _betterPlayerDataSource?.drmConfiguration?.clearKey,
           videoExtension: _betterPlayerDataSource!.videoExtension,
+          allowExternalPlayback: allowExternalPlayback,
         );
 
         break;
@@ -496,7 +502,29 @@ class BetterPlayerController {
         }
 
         await videoPlayerController?.setFileDataSource(
-            File(betterPlayerDataSource.url),
+          File(betterPlayerDataSource.url),
+          showNotification: _betterPlayerDataSource
+              ?.notificationConfiguration?.showNotification,
+          title: _betterPlayerDataSource?.notificationConfiguration?.title,
+          author: _betterPlayerDataSource?.notificationConfiguration?.author,
+          imageUrl:
+              _betterPlayerDataSource?.notificationConfiguration?.imageUrl,
+          notificationChannelName: _betterPlayerDataSource
+              ?.notificationConfiguration?.notificationChannelName,
+          overriddenDuration: _betterPlayerDataSource!.overriddenDuration,
+          activityName:
+              _betterPlayerDataSource?.notificationConfiguration?.activityName,
+          clearKey: _betterPlayerDataSource?.drmConfiguration?.clearKey,
+          allowExternalPlayback: allowExternalPlayback,
+        );
+        break;
+      case BetterPlayerDataSourceType.memory:
+        final file = await _createFile(_betterPlayerDataSource!.bytes!,
+            extension: _betterPlayerDataSource!.videoExtension);
+
+        if (file.existsSync()) {
+          await videoPlayerController?.setFileDataSource(
+            file,
             showNotification: _betterPlayerDataSource
                 ?.notificationConfiguration?.showNotification,
             title: _betterPlayerDataSource?.notificationConfiguration?.title,
@@ -508,27 +536,9 @@ class BetterPlayerController {
             overriddenDuration: _betterPlayerDataSource!.overriddenDuration,
             activityName: _betterPlayerDataSource
                 ?.notificationConfiguration?.activityName,
-            clearKey: _betterPlayerDataSource?.drmConfiguration?.clearKey);
-        break;
-      case BetterPlayerDataSourceType.memory:
-        final file = await _createFile(_betterPlayerDataSource!.bytes!,
-            extension: _betterPlayerDataSource!.videoExtension);
-
-        if (file.existsSync()) {
-          await videoPlayerController?.setFileDataSource(file,
-              showNotification: _betterPlayerDataSource
-                  ?.notificationConfiguration?.showNotification,
-              title: _betterPlayerDataSource?.notificationConfiguration?.title,
-              author:
-                  _betterPlayerDataSource?.notificationConfiguration?.author,
-              imageUrl:
-                  _betterPlayerDataSource?.notificationConfiguration?.imageUrl,
-              notificationChannelName: _betterPlayerDataSource
-                  ?.notificationConfiguration?.notificationChannelName,
-              overriddenDuration: _betterPlayerDataSource!.overriddenDuration,
-              activityName: _betterPlayerDataSource
-                  ?.notificationConfiguration?.activityName,
-              clearKey: _betterPlayerDataSource?.drmConfiguration?.clearKey);
+            clearKey: _betterPlayerDataSource?.drmConfiguration?.clearKey,
+            allowExternalPlayback: allowExternalPlayback,
+          );
           _tempFiles.add(file);
         } else {
           throw ArgumentError("Couldn't create file from memory.");
@@ -1317,6 +1327,7 @@ class BetterPlayerController {
       maxCacheFileSize: cacheConfig.maxCacheFileSize,
       cacheKey: cacheConfig.key,
       videoExtension: betterPlayerDataSource.videoExtension,
+      allowExternalPlayback: false,
     );
 
     return VideoPlayerController.preCache(dataSource, cacheConfig.preCacheSize);
