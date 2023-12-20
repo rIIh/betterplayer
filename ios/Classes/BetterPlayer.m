@@ -918,6 +918,10 @@ bool _restoreInterface = false;
 
 }
 
+- (void)setAllowExternalPlayback:(bool)allowExternalPlayback {
+    _player.allowsExternalPlayback = allowExternalPlayback;
+}
+
 - (void)setMixWithOthers:(bool)mixWithOthers {
   if (mixWithOthers) {
     [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback
