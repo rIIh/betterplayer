@@ -356,7 +356,8 @@ bool _remoteCommandsInitialized = false;
             NSString* cacheKey = dataSource[@"cacheKey"];
             NSNumber* maxCacheSize = dataSource[@"maxCacheSize"];
             NSString* videoExtension = dataSource[@"videoExtension"];
-            
+            bool allowExternalPlayback = [dataSource[@"allowExternalPlayback"] boolValue];
+
             int overriddenDuration = 0;
             if ([dataSource objectForKey:@"overriddenDuration"] != [NSNull null]){
                 overriddenDuration = [dataSource[@"overriddenDuration"] intValue];
@@ -413,6 +414,8 @@ bool _remoteCommandsInitialized = false;
                 result(FlutterMethodNotImplemented);
                 return;
             }
+            
+            [player setAllowExternalPlayback:allowExternalPlayback];
             
             result(nil);
         } else if ([@"dispose" isEqualToString:call.method]) {

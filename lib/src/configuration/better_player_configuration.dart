@@ -120,11 +120,15 @@ class BetterPlayerConfiguration {
   ///Default value is false.
   final bool useRootNavigator;
 
+  /// Flag to tell OS player able to play video through streaming. Can be overriden in data source.
+  final bool? allowExternalPlayback;
+
   const BetterPlayerConfiguration({
     this.aspectRatio,
     this.autoPlay = false,
     this.startAt,
     this.looping = false,
+    this.allowExternalPlayback,
     this.fullScreenByDefault = false,
     this.placeholder,
     this.showPlaceholderUntilPlay = false,
@@ -190,12 +194,15 @@ class BetterPlayerConfiguration {
     bool? autoDispose,
     bool? expandToFill,
     bool? useRootNavigator,
+    bool? allowExternalPlayback,
   }) {
     return BetterPlayerConfiguration(
       aspectRatio: aspectRatio ?? this.aspectRatio,
       autoPlay: autoPlay ?? this.autoPlay,
       startAt: startAt ?? this.startAt,
       looping: looping ?? this.looping,
+      allowExternalPlayback:
+          allowExternalPlayback ?? this.allowExternalPlayback,
       fullScreenByDefault: fullScreenByDefault ?? this.fullScreenByDefault,
       placeholder: placeholder ?? this.placeholder,
       showPlaceholderUntilPlay:

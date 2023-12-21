@@ -39,6 +39,8 @@ class BetterPlayerDataSource {
   ///If empty, then better player will choose name based on track parameters
   final List<String>? asmsTrackNames;
 
+  final bool? allowExternalPlayback;
+
   ///Optional, alternative resolutions for non-hls/dash video. Used to setup
   ///different qualities for video.
   ///Data should be in given format:
@@ -86,6 +88,7 @@ class BetterPlayerDataSource {
     this.useAsmsSubtitles = true,
     this.useAsmsTracks = true,
     this.useAsmsAudioTracks = true,
+    this.allowExternalPlayback,
     this.asmsTrackNames,
     this.resolutions,
     this.cacheConfiguration,
@@ -124,6 +127,7 @@ class BetterPlayerDataSource {
     BetterPlayerVideoFormat? videoFormat,
     BetterPlayerDrmConfiguration? drmConfiguration,
     Widget? placeholder,
+    bool? allowExternalPlayback,
     BetterPlayerBufferingConfiguration bufferingConfiguration =
         const BetterPlayerBufferingConfiguration(),
   }) {
@@ -144,6 +148,7 @@ class BetterPlayerDataSource {
       drmConfiguration: drmConfiguration,
       placeholder: placeholder,
       bufferingConfiguration: bufferingConfiguration,
+      allowExternalPlayback: allowExternalPlayback,
     );
   }
 
@@ -160,6 +165,7 @@ class BetterPlayerDataSource {
         const BetterPlayerNotificationConfiguration(showNotification: false),
     Duration? overriddenDuration,
     Widget? placeholder,
+    bool? allowExternalPlayback,
   }) {
     return BetterPlayerDataSource(
       BetterPlayerDataSourceType.file,
@@ -172,6 +178,7 @@ class BetterPlayerDataSource {
       notificationConfiguration: notificationConfiguration,
       overriddenDuration: overriddenDuration,
       placeholder: placeholder,
+      allowExternalPlayback: allowExternalPlayback,
     );
   }
 
@@ -189,6 +196,7 @@ class BetterPlayerDataSource {
         const BetterPlayerNotificationConfiguration(showNotification: false),
     Duration? overriddenDuration,
     Widget? placeholder,
+    bool? allowExternalPlayback,
   }) {
     return BetterPlayerDataSource(
       BetterPlayerDataSourceType.memory,
@@ -203,6 +211,7 @@ class BetterPlayerDataSource {
       notificationConfiguration: notificationConfiguration,
       overriddenDuration: overriddenDuration,
       placeholder: placeholder,
+      allowExternalPlayback: allowExternalPlayback,
     );
   }
 
@@ -227,6 +236,7 @@ class BetterPlayerDataSource {
     Widget? placeholder,
     BetterPlayerBufferingConfiguration? bufferingConfiguration =
         const BetterPlayerBufferingConfiguration(),
+    bool? allowExternalPlayback,
   }) {
     return BetterPlayerDataSource(
       type ?? this.type,
@@ -249,6 +259,8 @@ class BetterPlayerDataSource {
       placeholder: placeholder ?? this.placeholder,
       bufferingConfiguration:
           bufferingConfiguration ?? this.bufferingConfiguration,
+      allowExternalPlayback:
+          allowExternalPlayback ?? this.allowExternalPlayback,
     );
   }
 }

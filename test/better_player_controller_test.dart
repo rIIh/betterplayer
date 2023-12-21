@@ -175,8 +175,9 @@ void main() {
         final mockVideoPlayerController = MockVideoPlayerController();
         final BetterPlayerMockController betterPlayerMockController =
             BetterPlayerTestUtils.setupBetterPlayerMockController();
-        mockVideoPlayerController
-            .setNetworkDataSource(BetterPlayerTestUtils.bugBuckBunnyVideoUrl);
+        mockVideoPlayerController.setNetworkDataSource(
+            BetterPlayerTestUtils.bugBuckBunnyVideoUrl,
+            allowExternalPlayback: false);
 
         betterPlayerMockController.videoPlayerController =
             mockVideoPlayerController;
@@ -297,8 +298,9 @@ void main() {
         final mockVideoPlayerController = MockVideoPlayerController();
         final BetterPlayerMockController betterPlayerMockController =
             BetterPlayerTestUtils.setupBetterPlayerMockController();
-        mockVideoPlayerController
-            .setNetworkDataSource(BetterPlayerTestUtils.bugBuckBunnyVideoUrl);
+        mockVideoPlayerController.setNetworkDataSource(
+            BetterPlayerTestUtils.bugBuckBunnyVideoUrl,
+            allowExternalPlayback: false);
         betterPlayerMockController.videoPlayerController =
             mockVideoPlayerController;
         betterPlayerMockController.setVolume(1.0);
@@ -337,8 +339,9 @@ void main() {
         final mockVideoPlayerController = MockVideoPlayerController();
         final BetterPlayerMockController betterPlayerMockController =
             BetterPlayerTestUtils.setupBetterPlayerMockController();
-        mockVideoPlayerController
-            .setNetworkDataSource(BetterPlayerTestUtils.bugBuckBunnyVideoUrl);
+        mockVideoPlayerController.setNetworkDataSource(
+            BetterPlayerTestUtils.bugBuckBunnyVideoUrl,
+            allowExternalPlayback: false);
         betterPlayerMockController.videoPlayerController =
             mockVideoPlayerController;
         betterPlayerMockController.setSpeed(1.1);

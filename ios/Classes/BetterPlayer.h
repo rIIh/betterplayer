@@ -49,6 +49,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)seekTo:(int)location result:(FlutterResult) result;
 - (void)seekToWithTolerance:(int)location;
 - (bool)setPIPPrimary:(bool)isPrimary;
+- (void)setAllowExternalPlayback:(bool)allowExternalPlayback;
 - (void)setDataSourceAsset:(NSString*)asset withKey:(NSString*)key withCertificateUrl:(NSString*)certificateUrl withLicenseUrl:(NSString*)licenseUrl cacheKey:(NSString*)cacheKey cacheManager:(CacheManager*)cacheManager overriddenDuration:(int) overriddenDuration result:(FlutterResult) result;
 - (void)setDataSourceURL:(NSURL*)url withKey:(NSString*)key withCertificateUrl:(NSString*)certificateUrl withLicenseUrl:(NSString*)licenseUrl withHeaders:(NSDictionary*)headers withCache:(BOOL)useCache cacheKey:(NSString*)cacheKey cacheManager:(CacheManager*)cacheManager overriddenDuration:(int) overriddenDuration videoExtension: (NSString*) videoExtension result:(FlutterResult) result;
 - (void)setVolume:(double)volume;
