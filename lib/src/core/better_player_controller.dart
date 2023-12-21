@@ -666,6 +666,14 @@ class BetterPlayerController {
     _postEvent(BetterPlayerEvent(BetterPlayerEventType.pause));
   }
 
+  Future<void> stopExternalPlayback() async {
+    if (videoPlayerController == null) {
+      throw StateError("The data source has not been initialized");
+    }
+
+    await videoPlayerController?.stopExternalPlayback();
+  }
+
   ///Move player to specific position/moment of the video.
   Future<void> seekTo(Duration moment) async {
     if (videoPlayerController == null) {

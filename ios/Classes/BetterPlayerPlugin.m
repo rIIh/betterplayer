@@ -464,6 +464,14 @@ bool _remoteCommandsInitialized = false;
             [player play];
             
             result(nil);
+        } else if ([@"stopExternalPlayback" isEqualToString:call.method]) {
+            if (!player.player.isExternalPlaybackActive) return result(nil);
+            
+            bool currentValue = player.player.allowsExternalPlayback;
+            [player setAllowExternalPlayback:false];
+            [player setAllowExternalPlayback:currentValue];
+
+            result(nil);
         } else if ([@"position" isEqualToString:call.method]) {
             result(@([player position]));
         } else if ([@"absolutePosition" isEqualToString:call.method]) {

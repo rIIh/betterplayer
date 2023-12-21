@@ -478,6 +478,10 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     await _applyPlayPause();
   }
 
+  Future<void> stopExternalPlayback() async {
+    await _videoPlayerPlatform.stopExternalPlayback(_textureId);
+  }
+
   Future<void> _applyLooping() async {
     if (!_created || _isDisposed) {
       return;
