@@ -1,6 +1,11 @@
+include:
+  - project: 'mobile/renovate-runner'
+    file: '.gitlab-ci.yml'
+
 stages:
   - health
   - release
+  - deploy
 
 before_script:
   - echo $CI_PROJECT_PATH
