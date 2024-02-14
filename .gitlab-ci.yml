@@ -102,41 +102,6 @@ check:ios:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: on_success
 
-
-check:android:
-  stage: health
-  variables:
-    CI_TIMEOUT: 120
-  needs:
-    - health_check
-  tags:
-    - werf-m1
-  script:
-    - cd example
-    - fvm flutter build apk --debug
-  rules:
-    - if: $CI_COMMIT_BRANCH =~ /^(master|main|develop)$/
-      when: on_success
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: on_success
-
-check:ios:
-  stage: health
-  variables:
-    CI_TIMEOUT: 120
-  needs:
-    - health_check
-  tags:
-    - werf-m1
-  script:
-    - cd example
-    - fvm flutter build ipa --debug --no-codesign
-  rules:
-    - if: $CI_COMMIT_BRANCH =~ /^(master|main|develop)$/
-      when: on_success
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: on_success
-
 release:
   stage: release
   cache: {}
