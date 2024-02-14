@@ -1,6 +1,10 @@
 include:
   - project: 'mobile/renovate-runner'
+    ref: main
     file: '.gitlab-ci.yml'
+    rules:
+      - if: $CI_PIPELINE_SOURCE == "schedule"
+
 
 stages:
   - health
