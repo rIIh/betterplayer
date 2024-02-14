@@ -1,25 +1,32 @@
 include:
   - project: 'mobile/renovate-runner'
+    ref: main
     file: '.gitlab-ci.yml'
+    rules:
+      - if: $CI_PIPELINE_SOURCE == "schedule"
 
 stages:
   - health
   - release
   - deploy
 
-before_script:
-  - echo $CI_PROJECT_PATH
-  - fvm install && fvm flutter upgrade
-  - fvm flutter pub get
-  - (cd example ; fvm install && fvm flutter pub get)
-
-
-after_script:
-  - git status
-  - rm -rf .fvm/flutter_sdk
-  - rm -rf example/.fvm/flutter_sdk
+.flutter_job:
+  before_script:
+    - export PATH="$PATH:$HOMEBREW_PREFIX/opt/grep/libexec/gnubin"
+    - export PATH="$PATH:$HOME/fvm/default/bin"
+    - export PATH="$PATH:$HOME/.pub-cache/bin"
+    - export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
+    - echo $PATH
+    - fvm install && fvm flutter upgrade
+    - fvm flutter pub get
+    - (cd example ; fvm install && fvm flutter pub get)
+  after_script:
+    - git status
+    - rm -rf .fvm/flutter_sdk
+    - rm -rf example/.fvm/flutter_sdk
 
 health_check:
+  extends: .flutter_job
   stage: health
   variables:
     CI_TIMEOUT: 120
@@ -36,6 +43,7 @@ health_check:
       when: on_success
 
 test:
+  extends: .flutter_job
   stage: health
   variables:
     CI_TIMEOUT: 120
@@ -49,10 +57,8 @@ test:
     reports:
       junit:
         - junit-report.xml
-  before_script:
-    - export PATH="$PATH:.fvm/flutter_sdk/bin"
-    - fvm flutter pub global activate junitreport
   script:
+    - fvm flutter pub global activate junitreport
     - fvm flutter test --file-reporter json:tojunit.json
     - cat tojunit.json | $HOME/.pub-cache/bin/tojunit --output junit-report.xml
   rules:
@@ -65,6 +71,7 @@ test:
 
 
 check:android:
+  extends: .flutter_job
   stage: health
   variables:
     CI_TIMEOUT: 120
@@ -84,6 +91,7 @@ check:android:
       when: on_success
 
 check:ios:
+  extends: .flutter_job
   stage: health
   variables:
     CI_TIMEOUT: 120
