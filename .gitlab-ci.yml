@@ -1,6 +1,11 @@
+include:
+  - project: 'mobile/renovate-runner'
+    file: '.gitlab-ci.yml'
+
 stages:
   - health
   - release
+  - deploy
 
 before_script:
   - echo $CI_PROJECT_PATH
@@ -23,6 +28,8 @@ health_check:
   script:
     - ./scripts/analyze_for_errors.sh
   rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
     - if: $CI_COMMIT_BRANCH =~ /^(master|main|develop)$/
       when: on_success
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -49,6 +56,8 @@ test:
     - fvm flutter test --file-reporter json:tojunit.json
     - cat tojunit.json | $HOME/.pub-cache/bin/tojunit --output junit-report.xml
   rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
     - if: $CI_COMMIT_BRANCH =~ /^(master|main|develop)$/
       when: on_success
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -67,6 +76,8 @@ check:android:
     - cd example
     - fvm flutter build apk --debug
   rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
     - if: $CI_COMMIT_BRANCH =~ /^(master|main|develop)$/
       when: on_success
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -84,6 +95,8 @@ check:ios:
     - cd example
     - fvm flutter build ipa --debug --no-codesign
   rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
     - if: $CI_COMMIT_BRANCH =~ /^(master|main|develop)$/
       when: on_success
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -97,6 +110,8 @@ release:
   variables:
     CI: 1
   rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
     - if: $CI_COMMIT_BRANCH =~ /^(master|main)$/
       when: always
   before_script:
