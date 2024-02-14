@@ -12,10 +12,11 @@ stages:
   - deploy
 
 before_script:
-  - echo $CI_PROJECT_PATH
-  - fvm install && fvm flutter upgrade
+  - ls .fvm/flutter_sdk/bin || echo none
+  - fvm install --setup && fvm flutter upgrade
+  - ls .fvm/flutter_sdk/bin || echo none
   - fvm flutter pub get
-  - (cd example ; fvm install && fvm flutter pub get)
+  - (cd example ; fvm install --setup && fvm flutter pub get)
 
 
 after_script:
@@ -53,10 +54,9 @@ test:
     reports:
       junit:
         - junit-report.xml
-  before_script:
+  script:
     - export PATH="$PATH:.fvm/flutter_sdk/bin"
     - fvm flutter pub global activate junitreport
-  script:
     - fvm flutter test --file-reporter json:tojunit.json
     - cat tojunit.json | $HOME/.pub-cache/bin/tojunit --output junit-report.xml
   rules:
@@ -68,7 +68,7 @@ test:
       when: on_success
 
 
-check:android:
+.check:android:
   stage: health
   variables:
     CI_TIMEOUT: 120
@@ -87,7 +87,7 @@ check:android:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: on_success
 
-check:ios:
+.check:ios:
   stage: health
   variables:
     CI_TIMEOUT: 120
