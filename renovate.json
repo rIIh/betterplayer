@@ -2,5 +2,21 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "allowedPostUpgradeCommands": [".+pod install.+"],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "pub"
+      ],
+      "postUpgradeTasks": {
+        "commands": [
+          "(cd ios && pod install --repo-update || echo \"no ios folder\")"
+        ],
+        "fileFilters": [
+          "**/Podfile.lock"
+        ]
+      }
+    }
   ]
 }
