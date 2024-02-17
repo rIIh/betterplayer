@@ -1,17 +1,5 @@
 # CHANGELOG
 
-## [1.0.1](https://gitlab.artforintrovert.ru/mobile/betterplayer/compare/v1.0.0...v1.0.1) (2024-02-16)
-
-
-### Bug Fixes
-
-* **deps:** update dependency androidx.annotation:annotation to v1.7.1 ([773ff60](https://gitlab.artforintrovert.ru/mobile/betterplayer/commit/773ff60e013051df486eeed7c298965358175281))
-* **deps:** update dependency com.android.tools.build:gradle to v4.2.2 ([e03b426](https://gitlab.artforintrovert.ru/mobile/betterplayer/commit/e03b4268bf399eb327138af39fc9438bbb7cdaff))
-* **deps:** update dependency com.android.tools.build:gradle to v7.4.2 ([685a8ba](https://gitlab.artforintrovert.ru/mobile/betterplayer/commit/685a8ba4698cc93fc6eca7726498e5b0aec87cf9))
-* **deps:** update dependency com.android.tools.build:gradle to v8 ([6833b08](https://gitlab.artforintrovert.ru/mobile/betterplayer/commit/6833b08c5c274fb240eef5570f881cd75d830dd7))
-* **deps:** update exoplayerversion to v2.19.1 ([a56778c](https://gitlab.artforintrovert.ru/mobile/betterplayer/commit/a56778c91226b35c9c396a7b33b27d1679ea07b7))
-* **deps:** update kotlin monorepo to v1.9.22 ([aad6bf5](https://gitlab.artforintrovert.ru/mobile/betterplayer/commit/aad6bf5126a5ebb91dad65f513c94a6725d96174))
-
 ## 1.0.0 (2024-02-14)
 
 
