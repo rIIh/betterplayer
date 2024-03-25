@@ -7,6 +7,7 @@ include:
 
 stages:
   - health
+  - build
   - release
   - deploy
 
@@ -35,9 +36,7 @@ health_check:
   script:
     - ./scripts/analyze_for_errors.sh
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-      when: never
-    - if: $CI_COMMIT_BRANCH =~ /^(master|main|develop)$/
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^(master|main|develop)$/
       when: on_success
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: on_success
@@ -62,9 +61,7 @@ test:
     - fvm flutter test --file-reporter json:tojunit.json
     - cat tojunit.json | $HOME/.pub-cache/bin/tojunit --output junit-report.xml
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-      when: never
-    - if: $CI_COMMIT_BRANCH =~ /^(master|main|develop)$/
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^(master|main|develop)$/
       when: on_success
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: on_success
@@ -83,9 +80,7 @@ check:android:
     - cd example
     - fvm flutter build apk --debug
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-      when: never
-    - if: $CI_COMMIT_BRANCH =~ /^(master|main|develop)$/
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^(master|main|develop)$/
       when: on_success
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: on_success
@@ -103,9 +98,7 @@ check:ios:
     - cd example
     - fvm flutter build ipa --debug --no-codesign
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-      when: never
-    - if: $CI_COMMIT_BRANCH =~ /^(master|main|develop)$/
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^(master|main|develop)$/
       when: on_success
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: on_success
@@ -118,9 +111,7 @@ release:
   variables:
     CI: 1
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-      when: never
-    - if: $CI_COMMIT_BRANCH =~ /^(master|main)$/
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH =~ /^(master|main)$/
       when: always
   before_script:
     - git tag -d $(git tag -l)
