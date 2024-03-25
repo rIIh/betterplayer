@@ -3,8 +3,19 @@
   "extends": [
     "config:recommended"
   ],
-  "allowedPostUpgradeCommands": [".+pod install.+"],
+  "allowedPostUpgradeCommands": [
+    ".+pod install.+"
+  ],
   "packageRules": [
+    {
+      "matchManagers": [
+        "fvm"
+      ],
+      "prBodyNotes": [
+        "{{#if isPatch}}[Hotfixes to the Stable Channel](https://github.com/flutter/flutter/wiki/Hotfixes-to-the-Stable-Channel){{/if}}",
+        "{{#unless isPatch}}[Release Notes](https://docs.flutter.dev/release/release-notes/release-notes-{{{newMajor}}}.{{{newMinor}}}.0){{/unless}}"
+      ]
+    },
     {
       "matchManagers": [
         "pub"
