@@ -22,6 +22,8 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.OnPictureInPictureModeChangedProvider
 import androidx.core.app.PictureInPictureModeChangedInfo
+import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
 import androidx.lifecycle.lifecycleScope
 import com.jhomlala.better_player.BetterPlayerCache.releaseCache
 import io.flutter.embedding.engine.loader.FlutterLoader
@@ -113,10 +115,21 @@ class BetterPlayerPlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             provider?.addOnPictureInPictureModeChangedListener(::onPictureInPictureModeChangedListener)
         }
 
-        activity?.registerReceiver(pipActionsReceiver, PIPActionsReceiver.INTENT_FILTER)
-        activity?.registerReceiver(
-            homeButtonReceiver, IntentFilter(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
-        )
+        if (activity != null) {
+            ContextCompat.registerReceiver(
+                activity!!,
+                pipActionsReceiver,
+                PIPActionsReceiver.INTENT_FILTER,
+                RECEIVER_EXPORTED
+            )
+
+            ContextCompat.registerReceiver(
+                activity!!,
+                homeButtonReceiver,
+                IntentFilter(Intent.ACTION_CLOSE_SYSTEM_DIALOGS),
+                RECEIVER_EXPORTED
+            )
+        }
     }
 
     override fun onDetachedFromActivityForConfigChanges() {}
